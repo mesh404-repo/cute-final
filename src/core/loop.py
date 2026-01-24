@@ -387,6 +387,16 @@ def run_agent_loop(
             if verification_phase == "confirmation":
                 # LLM confirmed using previous verification (or did missing-only checks)
                 _log("Task completion confirmed after verification confirmation")
+
+                if "task incomplete" in response_text.lower():
+                    verification_phase = None
+                    messages.append({"role": "assistant", "content": response_text})
+                    messages.append({
+                        "role": "user",
+                        "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
+                    })
+                    _log("Task incomplete – requesting completion via tools")
+                    continue
                 break
 
             if verification_phase == "first":
@@ -491,8 +501,6 @@ def run_agent_loop(
             
             # Truncate output using middle-out (keeps beginning and end)
             output = middle_out_truncate(raw_output or "no output", max_tokens=max_output_tokens)
-
-            _log(f"tool output: {output}")
 
             emit(ItemCompletedEvent(
                 item=make_command_execution_item(

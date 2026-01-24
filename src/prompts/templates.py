@@ -144,7 +144,9 @@ You just completed a verification round. Below is your **previous verification r
 
 4. **Do not repeat work** – Do not re-verify what you already verified. Only run tools for verifications that were missing.
 
-5. **Complete when ready** – Once you have confirmed (or completed missing verification and confirmed), respond without tool calls to finalize completion.
+5. **If task incomplete** – When you determine the task is incomplete (missing verifications, unmet requirements, or unresolved issues), you MUST include the exact phrase **task incomplete** in your response.
+
+6. **Complete when ready** – Once you have confirmed (or completed missing verification and confirmed), respond without tool calls to finalize completion.
 
 Proceed: confirm using the previous result, or run only missing verifications, then complete.
 </system-reminder>"""

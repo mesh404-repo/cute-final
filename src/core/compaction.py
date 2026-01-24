@@ -469,6 +469,7 @@ def manage_context(
     # Step 0: Always prune images first (hard API limit, not token-based)
     total_images = count_total_images(messages)
     if total_images > IMAGE_PRUNE_TARGET:
+        _log(f"Image count: {total_images} (limit: {MAX_IMAGES_PER_REQUEST})")
         messages = prune_old_images(messages)
     
     total_tokens = estimate_total_tokens(messages)

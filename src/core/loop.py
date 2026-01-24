@@ -17,6 +17,7 @@ Context management strategy (like OpenCode/Codex):
 
 from __future__ import annotations
 
+import json
 import copy
 import time
 import sys
@@ -40,7 +41,7 @@ from src.output.jsonl import (
     make_command_execution_item,
     make_file_change_item,
 )
-from src.prompts.system import get_system_prompt, get_initial_prompt
+from src.prompts.system import get_system_prompt
 from src.prompts.templates import (
     VERIFICATION_PROMPT_TEMPLATE,
     VERIFICATION_CONFIRMATION_TEMPLATE,
@@ -158,8 +159,14 @@ def _apply_caching(
         if i in indices_to_cache:
             result.append(_add_cache_control_to_message(msg, cache_control))
         else:
-            result.append(msg)    
-
+            result.append(msg)
+    
+    cached_system = len([i for i in indices_to_cache if i in system_indices])
+    cached_final = len([i for i in indices_to_cache if i in non_system_indices])
+    
+    if indices_to_cache:
+        _log(f"Prompt caching: {cached_system} system + {cached_final} final messages marked ({len(indices_to_cache)} breakpoints)")
+    
     return result
 
 
@@ -225,7 +232,8 @@ def run_agent_loop(
     # 6. Main loop
     iteration = 0
     total_cost = 0.0
-    cost_limit = 100.0
+    
+    cost_limit = config.get("cost_limit", 100.0)
 
     concequtive_failed_attempts = 0
 
@@ -340,7 +348,12 @@ def run_agent_loop(
             
         except LLMError as e:
             _log(f"LLM error (fatal): {e.code} - {e.message}")
-            emit(TurnFailedEvent(error={"message": str(e)}))            
+            emit(TurnFailedEvent(error={"message": str(e)}))          
+
+            if "Prompt is too long" in e.message:
+                ctx.done()
+                return  
+            
             continue
         
         except Exception as e:
@@ -418,7 +431,7 @@ def run_agent_loop(
                 "type": "function",
                 "function": {
                     "name": call.name,
-                    "arguments": str(call.arguments) if isinstance(call.arguments, dict) else call.arguments,
+                    "arguments": json.dumps(call.arguments) if isinstance(call.arguments, dict) else call.arguments,
                 },
             })
         
@@ -426,15 +439,21 @@ def run_agent_loop(
             assistant_msg["tool_calls"] = tool_calls_data
         
         messages.append(assistant_msg)
+        _log(f"assistant msg: {assistant_msg}")
 
-        # Execute each tool call
+        # Execute each tool call and collect results
+        # We must add ALL tool results before any other messages (Anthropic API requirement)
+        tool_results = []
+        pending_images = []
+        
+        
         for call in response.function_calls:
             tool_name = call.name
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
-            _log(f"Executing tool: {tool_name}")
+            _log(f"tool name: {tool_name}")
             _log(f"tool args: {tool_args}")
-
+            
             # Emit item.started
             item_id = next_item_id()
             emit(ItemStartedEvent(
@@ -473,7 +492,7 @@ def run_agent_loop(
             # Truncate output using middle-out (keeps beginning and end)
             output = middle_out_truncate(raw_output or "no output", max_tokens=max_output_tokens)
 
-            _log(f"Tool output: {output}")
+            _log(f"tool output: {output}")
 
             emit(ItemCompletedEvent(
                 item=make_command_execution_item(
@@ -485,31 +504,62 @@ def run_agent_loop(
                 )
             ))
             
-            if result.inject_content:
-                # Add image to next user message
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": f"Image from {tool_name}:"},
-                        result.inject_content,
-                    ],
-                })
-                
-            # Add tool result to messages
-            messages.append({
+            # Collect tool result
+            tool_results.append({
                 "role": "tool",
                 "tool_call_id": call.id,
                 "content": output,
+                "tool_name": tool_name,
+                "invalid": result.invalid_param,
             })
-
-            if result.invalid_param:
+            
+            # Collect image for later (after all tool results)
+            if result.inject_content:
+                pending_images.append({
+                    "tool_name": tool_name,
+                    "content": result.inject_content,
+                })        
+        
+        # Add ALL tool results first (required by Anthropic API)
+        for tool_result in tool_results:
+            messages.append({
+                "role": tool_result.get("role", "user"),
+                "tool_call_id": tool_result.get("tool_call_id", None),
+                "content": tool_result.get("content", ""),
+            })
+            if tool_result.get("invalid", False):
                 messages.append({
                     "role": "user",
-                    "content": f"The tool '{tool_name}' was called with invalid parameters. Please review the error above and return a corrected tool call with all required parameters properly specified."
-                })
+                    "content": f"The tool '{tool_result.get('tool_name', '')}' was called with invalid parameters. Please review the error above and return a corrected tool call with all required parameters properly specified."
+                })        
         
         if total_cost >= cost_limit:
             break
+        # Now add any images as a separate user message (after tool results)
+        # Limit to max 5 images per turn to avoid hitting API limits
+        MAX_IMAGES_PER_TURN = 5
+        if pending_images:
+            images_to_add = pending_images[:MAX_IMAGES_PER_TURN]
+            if len(pending_images) > MAX_IMAGES_PER_TURN:
+                _log(f"Limiting images: {len(pending_images)} requested, adding {MAX_IMAGES_PER_TURN}")
+            
+            image_content = []
+            for img in images_to_add:
+                image_content.append({"type": "text", "text": f"Image from {img['tool_name']}:"})
+                image_content.append(img["content"])
+            
+            messages.append({
+                "role": "user",
+                "content": image_content,
+            })
+            
+            # Immediately prune if we've exceeded image limits
+            # This prevents hitting API limits before next manage_context() call
+            from src.core.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
+            total_imgs = count_total_images(messages)
+            if total_imgs > MAX_IMAGES_PER_REQUEST - 10:  # Leave buffer
+                _log(f"Immediate image prune: {total_imgs} images in context")
+                messages = prune_old_images(messages)
     
     # 7. Emit turn.completed
     emit(TurnCompletedEvent(usage={

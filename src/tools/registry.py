@@ -257,7 +257,7 @@ class ToolRegistry:
                 partial_output = "(no output before timeout)"
 
             return ToolResult(
-                success=False,
+                success=True,
                 output=f"""Command timed out after {timeout_sec}s.
                 
 The command may still be running in the background. Consider: 
@@ -275,21 +275,7 @@ Partial output before timeout:
             return ToolResult.fail(f"Permission denied executing: {command}")
             
         except Exception as e:
-            return ToolResult(
-                success=False,
-                output=f"""Command failed.
-
-Error analysis:
-1. Is the command valid in shell (can the command be executed in shell or not)?
-2. What does this error message indicate?
-3. Is this a syntax error, missing dependency, permission issue, or logic error?
-4. What is the root cause?
-5. How can you fix it?
-
-Output:
-{str(e)}
-""",
-            )
+            return ToolResult.fail(f"Command failed: {str(e)}")
     
     def _execute_read_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Read file contents."""

@@ -156,25 +156,6 @@ Rules:
     },
 }
 
-# View image tool
-VIEW_IMAGE_SPEC: dict[str, Any] = {
-    "name": "view_image",
-    "description": """View a local image from the filesystem.
-Only use this if given a full filepath by the user, and the image isn't already attached.
-Supported formats: PNG, JPEG, GIF, WebP, BMP.
-The image will be loaded and attached to the conversation for analysis.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "Local filesystem path to the image file",
-            },
-        },
-        "required": ["path"],
-    },
-}
-
 # Write file tool
 WRITE_FILE_SPEC: dict[str, Any] = {
     "name": "write_file",
@@ -259,87 +240,6 @@ Be specific in queries: include library names, vulnerability types, or technique
     },
 }
 
-
-# Extract video frames tool
-EXTRACT_VIDEO_FRAMES_SPEC: dict[str, Any] = {
-    "name": "extract_video_frames",
-    "description": """Extract frames from a video file at regular intervals.
-
-Use this to analyze video content by extracting frames that can then be viewed with view_image.
-Useful for: game footage analysis, tutorial extraction, action detection, etc.
-
-The frames are saved as images in the specified output directory.
-After extraction, use view_image on individual frames to analyze them.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "video_path": {
-                "type": "string",
-                "description": "Path to the video file (mp4, avi, mkv, mov, webm)",
-            },
-            "output_dir": {
-                "type": "string",
-                "description": "Directory to save extracted frames",
-            },
-            "fps": {
-                "type": "number",
-                "description": "Frames per second to extract (default: 1.0). Lower = fewer frames.",
-            },
-            "max_frames": {
-                "type": "integer",
-                "description": "Maximum number of frames to extract (default: 30)",
-            },
-            "start_time": {
-                "type": "number",
-                "description": "Start time in seconds (optional)",
-            },
-            "end_time": {
-                "type": "number",
-                "description": "End time in seconds (optional)",
-            },
-            "scale": {
-                "type": "string",
-                "description": "Output scale, e.g., '640:-1' for 640px width with auto height (optional)",
-            },
-        },
-        "required": ["video_path", "output_dir"],
-    },
-}
-
-# Extract keyframes tool
-EXTRACT_KEYFRAMES_SPEC: dict[str, Any] = {
-    "name": "extract_keyframes",
-    "description": """Extract keyframes (scene changes) from a video.
-
-More efficient than fixed-interval extraction - only extracts frames where
-significant visual changes occur. Good for understanding video structure
-and key moments.
-
-After extraction, use view_image on individual keyframes to analyze them.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "video_path": {
-                "type": "string",
-                "description": "Path to the video file",
-            },
-            "output_dir": {
-                "type": "string",
-                "description": "Directory to save extracted keyframes",
-            },
-            "max_frames": {
-                "type": "integer",
-                "description": "Maximum keyframes to extract (default: 20)",
-            },
-            "threshold": {
-                "type": "number",
-                "description": "Scene change threshold 0.0-1.0 (default: 0.3). Lower = more frames.",
-            },
-        },
-        "required": ["video_path", "output_dir"],
-    },
-}
-
 # All tool specs
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "shell_command": SHELL_COMMAND_SPEC,
@@ -348,11 +248,8 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "list_dir": LIST_DIR_SPEC,
     "grep_files": GREP_FILES_SPEC,
     "apply_patch": APPLY_PATCH_SPEC,
-    "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
-    "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
-    "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,
 }
 
 

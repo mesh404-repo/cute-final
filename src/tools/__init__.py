@@ -16,8 +16,6 @@ from src.tools.read_file import ReadFileTool
 from src.tools.write_file import WriteFileTool
 from src.tools.list_dir import ListDirTool
 from src.tools.search_files import SearchFilesTool
-from src.tools.view_image import view_image
-from src.tools.extract_video import extract_video_frames, extract_keyframes
 from src.tools.web_search import web_search
 
 __all__ = [
@@ -41,8 +39,5 @@ __all__ = [
     "WriteFileTool",
     "ListDirTool",
     "SearchFilesTool",
-    "view_image",
-    "extract_video_frames",
-    "extract_keyframes",
     "web_search",
 ]

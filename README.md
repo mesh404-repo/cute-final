@@ -121,7 +121,6 @@ Before completing, the agent automatically:
 | `apply_patch` | Apply patches |
 | `grep_files` | Search with ripgrep |
 | `list_dir` | List directories |
-| `view_image` | Analyze images |
 
 ## Configuration
 

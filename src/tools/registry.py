@@ -155,16 +155,10 @@ class ToolRegistry:
                 result = self._execute_grep(ctx, cwd, arguments)
             elif name == "apply_patch":
                 result = self._execute_apply_patch(cwd, arguments)
-            elif name == "view_image":
-                result = self._execute_view_image(cwd, arguments)
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
-                result = self._execute_web_search(arguments)
-            elif name == "extract_video_frames":
-                result = self._execute_extract_video_frames(cwd, arguments)
-            elif name == "extract_keyframes":
-                result = self._execute_extract_keyframes(cwd, arguments)
+                result = self._execute_web_search(arguments)            
             else:
                 result = ToolResult.fail(f"Unknown tool: {name}")
                 
@@ -490,19 +484,6 @@ Partial output before timeout:
         tool = ApplyPatchTool(cwd)
         return tool.execute(patch=patch)
     
-    def _execute_view_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """View an image file."""
-        path = args.get("path", "")
-        
-        if not path:
-            return ToolResult.invalid(
-                "Missing required parameter 'path'. "
-                "Usage: view_image(path: str)"
-            )
-        
-        from src.tools.view_image import view_image
-        return view_image(path, cwd)
-    
     def _execute_update_plan(self, args: dict[str, Any]) -> ToolResult:
         """Update the task plan."""
         steps = args.get("steps")
@@ -529,63 +510,7 @@ Partial output before timeout:
         if explanation:
             lines.append(f"\nReason: {explanation}")
         
-        return ToolResult.ok("\n".join(lines))
-    
-    
-    def _execute_extract_video_frames(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Extract frames from a video file."""
-        video_path = args.get("video_path", "")
-        output_dir = args.get("output_dir", "")
-        
-        if not video_path:
-            return ToolResult.invalid(
-                "Missing required parameter 'video_path'. "
-                "Usage: extract_video_frames(video_path: str, output_dir: str, fps?: float, max_frames?: int, start_time?: float, end_time?: float, scale?: str, format?: str)"
-            )
-        if not output_dir:
-            return ToolResult.invalid(
-                "Missing required parameter 'output_dir'. "
-                "Usage: extract_video_frames(video_path: str, output_dir: str, fps?: float, max_frames?: int, start_time?: float, end_time?: float, scale?: str, format?: str)"
-            )
-        
-        from src.tools.extract_video import extract_video_frames
-        return extract_video_frames(
-            video_path=video_path,
-            output_dir=output_dir,
-            cwd=cwd,
-            fps=args.get("fps", 1.0),
-            max_frames=args.get("max_frames", 30),
-            start_time=args.get("start_time"),
-            end_time=args.get("end_time"),
-            scale=args.get("scale"),
-            format=args.get("format", "png"),
-        )
-    
-    def _execute_extract_keyframes(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Extract keyframes (scene changes) from a video file."""
-        video_path = args.get("video_path", "")
-        output_dir = args.get("output_dir", "")
-        
-        if not video_path:
-            return ToolResult.invalid(
-                "Missing required parameter 'video_path'. "
-                "Usage: extract_keyframes(video_path: str, output_dir: str, max_frames?: int, threshold?: float, format?: str)"
-            )
-        if not output_dir:
-            return ToolResult.invalid(
-                "Missing required parameter 'output_dir'. "
-                "Usage: extract_keyframes(video_path: str, output_dir: str, max_frames?: int, threshold?: float, format?: str)"
-            )
-        
-        from src.tools.extract_video import extract_keyframes
-        return extract_keyframes(
-            video_path=video_path,
-            output_dir=output_dir,
-            cwd=cwd,
-            max_frames=args.get("max_frames", 20),
-            threshold=args.get("threshold", 0.3),
-            format=args.get("format", "png"),
-        )
+        return ToolResult.ok("\n".join(lines))    
     
     def _execute_web_search(self, args: dict[str, Any]) -> ToolResult:
         """Search the web for information."""

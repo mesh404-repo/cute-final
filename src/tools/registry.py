@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -208,26 +209,53 @@ class ToolRegistry:
 
         try:
             result = subprocess.run(
-                ["sh", "-c", command],
+                ["sh", "-lc", command],
                 cwd=str(effective_cwd),
                 capture_output=True,
                 text=True,
                 timeout=timeout_sec,
+                env={**os.environ, "TERM": "dumb"},  # Disable color codes
             )
             
-            output = result.stdout
+            output_parts = []
+            
+            if result.stdout:
+                stdout = result.stdout                
+                output_parts.append(stdout)
+            
             if result.stderr:
-                output += f"\n{result.stderr}"
+                stderr = result.stderr                
+                if output_parts:
+                    output_parts.append(f"\nstderr:\n{stderr}")
+                else:
+                    output_parts.append(stderr)
             
+            output = "".join(output_parts).strip()
+            
+            # Add exit code info if non-zero
             if result.returncode != 0:
-                output += f"\n[exit code: {result.returncode}]"
+                output = f"{output}\n\nExit code: {result.returncode}" if output else f"Exit code: {result.returncode}"
             
-            return ToolResult(
-                success=result.returncode == 0,
-                output=output.strip(),
-            )
+            if not output:
+                output = "(no output)"
             
-        except subprocess.TimeoutExpired:
+            # Return result based on exit code
+            if result.returncode == 0:
+                return ToolResult.ok(output)
+            else:
+                return ToolResult.ok(output)
+            
+        except subprocess.TimeoutExpired as e:
+            partial_output = ""
+            if e.stdout:
+                partial_output = e.stdout if isinstance(e.stdout, str) else e.stdout.decode("utf-8", errors="replace")
+            if e.stderr:
+                stderr = e.stderr if isinstance(e.stderr, str) else e.stderr.decode("utf-8", errors="replace")
+                partial_output = f"{partial_output}\nstderr:\n{stderr}" if partial_output else stderr
+            
+            if not partial_output:
+                partial_output = "(no output before timeout)"
+
             return ToolResult(
                 success=False,
                 output=f"""Command timed out after {timeout_sec}s.
@@ -236,8 +264,15 @@ The command may still be running in the background. Consider:
 1. Check if the process is still running: `ps aux | grep <process>` 
 2. Increase timeout if the operation legitimately needs more time 
 3. Check if the command is waiting for input (use -y flags, heredocs, etc.) 
-4. Break the command into smaller steps""",
+4. Break the command into smaller steps
+
+Partial output before timeout:
+{partial_output}
+""",
             )
+        
+        except PermissionError:
+            return ToolResult.fail(f"Permission denied executing: {command}")
             
         except Exception as e:
             return ToolResult(

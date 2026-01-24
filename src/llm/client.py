@@ -84,7 +84,7 @@ class LiteLLMClient:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.cost_limit = cost_limit or float(os.environ.get("LLM_COST_LIMIT", "16.0"))
+        self.cost_limit = cost_limit or float(os.environ.get("LLM_COST_LIMIT", "100.0"))
         
         self._total_cost = 0.0
         self._total_tokens = 0

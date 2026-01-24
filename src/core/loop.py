@@ -218,7 +218,7 @@ def run_agent_loop(
     # 6. Main loop
     iteration = 0
     total_cost = 0.0
-    cost_limit = 16.0
+    cost_limit = 100.0
 
     concequtive_failed_attempts = 0
 

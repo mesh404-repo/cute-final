@@ -414,6 +414,7 @@ def run_agent_loop(
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"Executing tool: {tool_name}")
+            _log(f"tool args: {tool_args}")
 
             # Emit item.started
             item_id = next_item_id()

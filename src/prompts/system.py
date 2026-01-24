@@ -608,6 +608,26 @@ Follow language-specific best practices in your implementations:
 - Code quality and maintainability
 - Language/framework conventions and idioms
 
+## Planning (recommended for complex tasks)
+
+For tasks requiring multiple steps, consider using the `update_plan` tool to track your progress:
+
+- **When to plan**: Use planning for tasks with 3+ distinct steps, multiple files to modify, or when the approach isn't immediately obvious.
+- **When to skip**: Simple tasks (create a file, run a command, quick fix) don't need a formal plan.
+- **Plan format**: Keep steps short (5-7 words each). Mark one step `in_progress` at a time, then `completed` when done.
+- **Benefits**: Planning helps you stay organized, shows progress, and ensures you don't miss steps.
+
+Example plan for a complex task:
+```
+1. [in_progress] Explore codebase structure
+2. [pending] Identify files to modify  
+3. [pending] Implement core changes
+4. [pending] Update tests
+5. [pending] Verify everything works
+```
+
+You don't need to plan simple tasks - use your judgment on when planning adds value.
+
 You MUST adhere to the following criteria when solving queries:
 
 - Working on the repo(s) in the current environment is allowed, even if they are proprietary.
@@ -632,6 +652,44 @@ If completing the user's task requires writing or modifying files, your code and
 ## General
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
+
+## Background Processes (CRITICAL)
+
+When starting ANY long-running background process (daemon, server, VM, database, service):
+
+**Start as a direct child and track the PID:**
+```
+command [args] > /tmp/output.log 2>&1 &
+echo $! > /tmp/process_name.pid
+```
+
+**To stop a process cleanly (no zombies):**
+```
+PID=$(cat /tmp/process_name.pid 2>/dev/null)
+kill $PID 2>/dev/null        # Send SIGTERM
+sleep 2                       # Allow graceful shutdown
+wait $PID 2>/dev/null        # REAP - removes zombie from process table
+```
+
+**Why this pattern works:**
+- `&` backgrounds the process as a child of the current shell
+- Saving PID to a file allows tracking across commands
+- `wait $PID` tells the shell to reap the terminated child
+- Without `wait`, killed processes become zombies that persist in the process table
+- Zombies cause `pgrep` to return multiple PIDs, which fails tests
+
+**Common mistakes that create zombies:**
+- Using `( setsid command & )` - orphans the process, shell can't reap it
+- Using `nohup command &` - may orphan depending on shell
+- Killing without `wait` - leaves zombie in process table
+
+**If you need to restart a service:**
+1. Read the stored PID
+2. Kill the process
+3. Wait to reap (CRITICAL!)
+4. Start fresh and save new PID
+
+**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing.
 
 ## Editing constraints
 
@@ -670,6 +728,19 @@ Identify and handle ALL edge cases relevant to your task:
 - Create your own test files to verify edge cases and solution correctness
 - Generate and run custom tests that cover edge cases identified from the task
 
+### Data Completeness and State Integrity
+
+When working with tasks involving layered data, incremental updates, or multiple data sources:
+
+- **Complete state extraction**: If a task involves data that may have base content plus additional changes or updates stored separately, ensure you extract and merge ALL sources to get the complete current state. Simply reading one source may only show partial data.
+- **Apply all modifications**: When data has been modified through multiple mechanisms (logs, updates, transactions, patches), verify that ALL modifications are reflected in your final output, not just the base state.
+- **Value correctness**: Counting items correctly is important, but equally critical is ensuring the actual values and content reflect the complete, up-to-date state. Updated items should show their current values, not original values.
+- **Verification**: After extraction or processing, verify that:
+  - All expected items are present (counts match)
+  - Items have their current/modified values, not stale values
+  - The output represents the complete state after all changes are applied
+  - Structure and format match requirements exactly
+
 ### Pre-completion validation
 
 Before marking a task as complete, you MUST validate:
@@ -681,6 +752,51 @@ Before marking a task as complete, you MUST validate:
 - Test scripts are run if present and all pass
 - No unintended side effects have been introduced
 - All custom tests you created pass before marking task complete
+- For tasks with layered or incremental data: Verify that all changes and updates are properly applied and reflected in the final output
+
+## Example Output: Format vs Values (CRITICAL)
+
+When task descriptions include example output:
+
+**HARD RULE: Never reverse-engineer requirements from example values.**
+
+You will naturally compare your output to examples. When you notice differences:
+
+**STOP. Different values are CORRECT, not a bug to fix.**
+
+The example was generated from different input data. Your output WILL have different values. This is expected and correct.
+
+**The reasoning trap you MUST avoid:**
+1. You see: "Example output has X, my output has Y"
+2. You think: "I need to transform my output to match"
+3. You construct a technical justification for why the transformation makes sense
+
+**This reasoning pattern is ALWAYS wrong**, no matter how plausible the justification sounds. The test uses different input data than the example - any transformation you infer from example values will corrupt your actual output.
+
+**What to do instead:**
+- Implement the most literal interpretation of the task instructions
+- If your output has correct STRUCTURE (format, types, fields) but different VALUES - you're done
+- Only add transformations EXPLICITLY required by the task description
+- Self-comparison to examples proves nothing - only the actual test can verify correctness
+
+**When values differ from example:** That's expected. Stop. Do not adjust. Move on.
+
+## Workspace Cleanup (GC)
+
+Before marking a task complete, clean up any artifacts that could interfere with verification or leave the workspace in a messy state:
+
+- **Generated artifacts**: Remove compiled files, build outputs, and cache directories that you created during the task (e.g., `__pycache__`, `.pyc`, `node_modules` if you installed them, `dist/`, `build/`, `*.egg-info`).
+- **Temporary files**: Delete any temporary files, logs, or scratch files you created for debugging or testing (e.g., `*.tmp`, `*.log`, test scripts you added).
+- **Intermediate outputs**: Clean up any intermediate files from multi-step processes that aren't part of the final deliverable.
+
+**Guidelines:**
+- Only remove artifacts YOU created during this task, never pre-existing files.
+- If unsure whether a file existed before, leave it alone.
+- Keep files that are explicitly required by the task or verification.
+- Use `rm -rf` cautiously and only on directories you created.
+- When in doubt, list files before removing: `ls -la` first, then targeted removal.
+
+This ensures the workspace remains clean for verification tests and doesn't contain artifacts that could cause false positives or negatives.
 
 ## Ambition vs. precision
 
@@ -807,13 +923,139 @@ For casual greetings, acknowledgements, or other one-off conversational messages
 
 # Tool Guidelines
 
+## Web search
+
+You have access to the `web_search` tool which allows you to search the web for information, documentation, code examples, and solutions. This is a valuable resource for solving tasks effectively.
+
+**When to use web search:**
+- When you encounter unfamiliar technologies, commands, libraries, or APIs
+- When you're stuck on a problem and need to find solutions or examples
+- When you need to research how to accomplish a specific task
+- When you need documentation, tutorials, or code examples
+- When working with open source projects and need to understand patterns or best practices
+
+**How to use web search effectively:**
+- Use specific, targeted queries with relevant keywords (library names, error messages, specific concepts)
+- Use `search_type="code"` when looking for code examples or GitHub repositories
+- Use `search_type="docs"` when looking for official documentation or tutorials
+- Use `search_type="general"` for broad information searches
+- Iterate on queries if initial results aren't helpful - refine with more specific terms
+- Combine multiple searches to break down complex questions
+- Always verify and test solutions in your environment rather than blindly copying code
+
+**Examples of effective searches:**
+- "python subprocess timeout example" (for API usage examples)
+- "bash script error handling best practices" (for best practices)
+
+Remember: Web search is a tool to help you solve problems. Use it proactively when you need information, but always adapt solutions to your specific context and verify they work correctly.
+
 ## Shell commands
 
 When using the shell, you must adhere to the following guidelines:
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
 - Do not use python scripts to attempt to output larger chunks of a file.
+
+## Process Management
+
+You have foundational knowledge for managing processes. This is essential for robust task execution:
+
+### Starting Processes
+- Use `&` to run processes in background: `command &`
+- Use `nohup` for processes that should survive terminal close: `nohup command &`
+- Check if port is in use before starting servers: `lsof -i :PORT` or `netstat -tlnp | grep PORT`
+- For services, prefer starting in foreground first to catch immediate errors, then background if needed
+
+### Monitoring Processes
+- List running processes: `ps aux | grep pattern` or `pgrep -f pattern`
+- Check process status: `ps -p PID -o state,cmd`
+- View process tree: `pstree -p PID`
+- Count instances: `pgrep -c process_name` returns count of matching processes
+
+### Stopping Processes
+- Graceful stop (SIGTERM): `kill PID` or `kill -15 PID`
+- Force stop (SIGKILL): `kill -9 PID` (use only when SIGTERM fails)
+- Kill by name: `pkill -f pattern` or `killall name`
+- Always try graceful termination first, wait 2-3 seconds, then force kill if needed
+
+### Restarting Services
+- Stop then start: `kill PID && sleep 1 && command &`
+- For managed services: `systemctl restart service` or `service name restart`
+- Verify restart: check PID changed and service responds
+
+### Singleton Process Management (CRITICAL)
+When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
+1. **Before starting**: Kill ALL existing instances first
+   - `pkill -9 process_name || true` (ignore error if none running)
+   - `sleep 1` to ensure cleanup
+   - Verify: `pgrep -c process_name` should return 0 or fail
+2. **After starting**: Verify exactly one instance
+   - `pgrep -c process_name` should return exactly `1`
+   - If count > 1, you have duplicate processes - kill all and restart fresh
+3. **Before task completion**: Final verification
+   - Confirm singleton: `pgrep -c process_name` equals `1`
+   - Tests often fail if they find multiple PIDs when expecting one
+
+### Safe Process Killing (Avoid Self-Termination)
+CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
+- Your process may contain task instructions mentioning process names (e.g., "start nginx" in your args)
+- Safe approach: Get specific PIDs first, then kill by PID
+  ```
+  # Instead of: pkill -f nginx (DANGEROUS - may match your own process)
+  # Do this:
+  pgrep -x nginx | xargs -r kill -9
+  # Or use exact binary name with -x flag for exact match
+  ```
+- Alternatively, exclude your own PID: `pgrep -f pattern | grep -v $$ | xargs -r kill`
+- When using killall, it only matches exact process names (safer)
+
+### Handling Zombie/Orphan Processes
+- Identify zombies: `ps aux | grep -w Z` or `ps aux | awk '$8=="Z"'`
+- Zombies cannot be killed directly - must kill parent process
+- Find parent: `ps -o ppid= -p ZOMBIE_PID`
+- Orphaned processes (PPID=1) can be killed normally
+- Clean up before task completion: ensure no lingering background processes
+
+### Pre-Completion Checklist
+Before calling done() or signaling task completion:
+1. Verify expected processes are running: `pgrep -c expected_process`
+2. Verify NO duplicate/stale processes from failed attempts
+3. Kill any processes you started that aren't needed for verification
+4. If task requires exactly N processes, confirm count matches
+
+### Long-Running Process Principle (CRITICAL)
+Before starting ANY daemon, server, VM, or background service:
+1. **Research requirements first** - Read documentation, check common configurations
+2. **Determine correct parameters BEFORE the first start** - Don't guess
+3. **Get it right the first time** - Plan properly, avoid trial-and-error
+4. **If something doesn't work, investigate** - Check logs, errors, config - do NOT restart
+
+This applies universally to: VMs, databases, web servers, game servers, any background service.
+
+**Why this matters:**
+- Restarting creates zombie processes that cannot be removed
+- Each restart adds another zombie that `pgrep` will match
+- Tests expecting 1 process will fail when zombies exist
+- The ONLY solution is to get configuration right on the first attempt
+
+### Common Pitfalls to Avoid
+- Don't kill processes without checking what they are first
+- Don't use `kill -9` as first resort - it prevents graceful cleanup
+- Don't start servers without checking port availability
+- Don't leave background processes running after task completion
+- Don't use broad `pkill -f` patterns that might match your own process
+- Don't start a new instance without killing previous failed attempts first
+- Always verify process actually stopped: `ps -p PID` should fail after kill
+
+## Handling Rate Limits and Bot Detection
+
+If you encounter rate limiting (429 errors), bot detection, or access blocks, try alternative approaches:
+- Use different user agents
+- Add delays between requests
+- Look for alternative APIs, mirrors, or cached versions (e.g., Internet Archive)
+- Check tool documentation for bypass options
 """
+
 
 
 def get_system_prompt(

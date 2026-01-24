@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.llm.client import LiteLLMClient
@@ -35,8 +35,9 @@ PRUNE_PROTECT = 40_000  # Protect this many tokens of recent tool output
 PRUNE_MINIMUM = 20_000  # Only prune if we can recover at least this many tokens
 PRUNE_MARKER = "[Old tool result content cleared]"
 
-# Image management constants
-IMAGE_LIMIT = 10  # Maximum number of images to keep in context
+# Image limits (Anthropic max: 100, but we keep fewer for efficiency)
+MAX_IMAGES_PER_REQUEST = 100
+IMAGE_PRUNE_TARGET = 10  # Keep only last N images (LLM has already seen older ones)
 
 # Compaction prompts (from Codex)
 COMPACTION_PROMPT = """You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff summary for another LLM that will resume the task.
@@ -120,133 +121,6 @@ def needs_compaction(messages: List[Dict[str, Any]]) -> bool:
     """Check if messages need compaction."""
     total_tokens = estimate_total_tokens(messages)
     return is_overflow(total_tokens)
-
-
-# =============================================================================
-# Image Management
-# =============================================================================
-
-def count_images_in_messages(messages: List[Dict[str, Any]]) -> Tuple[int, int, int]:
-    """
-    Count images in messages and determine which are analyzed.
-    
-    An image is considered "analyzed" if it appears in a user message
-    that comes before an assistant message (meaning the LLM has seen it).
-    
-    Returns:
-        Tuple of (analyzed_count, unanalyzed_count, total_count)
-    """
-    total_images = 0
-    analyzed_images = 0
-    
-    # Track which messages have images and their positions
-    image_positions: List[int] = []
-    
-    # First pass: find all images
-    for i, msg in enumerate(messages):
-        content = msg.get("content")
-        if isinstance(content, list):
-            for part in content:
-                if isinstance(part, dict) and part.get("type") == "image_url":
-                    total_images += 1
-                    image_positions.append(i)
-    
-    # Second pass: determine which are analyzed
-    # An image is analyzed if there's an assistant message after it
-    for img_pos in image_positions:
-        # Check if there's an assistant message after this image
-        for i in range(img_pos + 1, len(messages)):
-            if messages[i].get("role") == "assistant":
-                analyzed_images += 1
-                break
-    
-    unanalyzed_images = total_images - analyzed_images
-    return analyzed_images, unanalyzed_images, total_images
-
-
-def prune_images_from_messages(
-    messages: List[Dict[str, Any]],
-    limit: int = IMAGE_LIMIT,
-) -> Tuple[List[Dict[str, Any]], int, int]:
-    """
-    Prune old images from messages, keeping only the most recent ones.
-    
-    Strategy:
-    1. Go backwards through messages
-    2. Keep images from the most recent messages
-    3. Remove images from older messages once limit is reached
-    
-    Args:
-        messages: List of messages
-        limit: Maximum number of images to keep
-        
-    Returns:
-        Tuple of (pruned_messages, images_removed_count, messages_affected_count)
-    """
-    if not messages:
-        return messages, 0, 0
-    
-    # Count current images
-    _, _, total_images = count_images_in_messages(messages)
-    
-    if total_images <= limit:
-        return messages, 0, 0
-    
-    # Track images and their positions
-    image_data: List[Tuple[int, int]] = []  # (message_index, content_index)
-    
-    for msg_idx, msg in enumerate(messages):
-        content = msg.get("content")
-        if isinstance(content, list):
-            for content_idx, part in enumerate(content):
-                if isinstance(part, dict) and part.get("type") == "image_url":
-                    image_data.append((msg_idx, content_idx))
-    
-    # Keep only the last `limit` images
-    images_to_remove = len(image_data) - limit
-    if images_to_remove <= 0:
-        return messages, 0, 0
-    
-    # Remove images from oldest messages first
-    images_to_remove_list = image_data[:-limit] if limit > 0 else image_data
-    
-    # Group by message index for efficient removal
-    messages_to_modify: Dict[int, List[int]] = {}
-    for msg_idx, content_idx in images_to_remove_list:
-        if msg_idx not in messages_to_modify:
-            messages_to_modify[msg_idx] = []
-        messages_to_modify[msg_idx].append(content_idx)
-    
-    messages_affected = len(messages_to_modify)
-    
-    # Build new messages with images removed
-    result = []
-    for msg_idx, msg in enumerate(messages):
-        if msg_idx not in messages_to_modify:
-            result.append(msg)
-            continue
-        
-        # This message has images to remove
-        content = msg.get("content")
-        if isinstance(content, list):
-            # Remove image parts at specified indices (in reverse order to maintain indices)
-            indices_to_remove = set(messages_to_modify[msg_idx])
-            new_content = [
-                part for i, part in enumerate(content)
-                if i not in indices_to_remove
-            ]
-            # If content becomes empty or only has one text part, simplify
-            if len(new_content) == 1 and isinstance(new_content[0], dict) and new_content[0].get("type") == "text":
-                result.append({**msg, "content": new_content[0].get("text", "")})
-            elif new_content:
-                result.append({**msg, "content": new_content})
-            else:
-                # Empty content, skip this message
-                continue
-        else:
-            result.append(msg)
-    
-    return result, len(images_to_remove_list), messages_affected
 
 
 # =============================================================================
@@ -343,6 +217,155 @@ def prune_old_tool_outputs(
 
 
 # =============================================================================
+# Image Pruning (Anthropic limit: 100 images per request)
+# =============================================================================
+
+def count_images_in_message(msg: Dict[str, Any]) -> int:
+    """Count number of images in a message."""
+    count = 0
+    content = msg.get("content")
+    if isinstance(content, list):
+        for part in content:
+            if isinstance(part, dict):
+                if part.get("type") == "image_url" or part.get("type") == "image":
+                    count += 1
+    return count
+
+
+def count_total_images(messages: List[Dict[str, Any]]) -> int:
+    """Count total images across all messages."""
+    return sum(count_images_in_message(m) for m in messages)
+
+
+def is_image_analyzed(messages: List[Dict[str, Any]], image_msg_index: int) -> bool:
+    """
+    Check if an image has been analyzed by the LLM.
+    
+    An image is considered "analyzed" if there's an assistant message
+    after the message containing the image.
+    
+    Args:
+        messages: Full message list
+        image_msg_index: Index of the message containing the image
+        
+    Returns:
+        True if there's an assistant message after this image
+    """
+    for i in range(image_msg_index + 1, len(messages)):
+        if messages[i].get("role") == "assistant":
+            return True
+    return False
+
+
+def prune_old_images(
+    messages: List[Dict[str, Any]],
+    max_images: int = IMAGE_PRUNE_TARGET,
+) -> List[Dict[str, Any]]:
+    """
+    Remove old images from context to stay under Anthropic's limit.
+    
+    Strategy:
+    1. Prefer removing analyzed images first (have assistant response after)
+    2. If still over HARD LIMIT (100), force remove oldest unanalyzed too
+    3. Replace removed images with text placeholder
+    
+    Args:
+        messages: List of messages
+        max_images: Target maximum number of images
+        
+    Returns:
+        Messages with old images pruned
+    """
+    total_images = count_total_images(messages)
+    
+    if total_images <= max_images:
+        return messages
+    
+    # First, identify which messages have images and whether they've been analyzed
+    image_msg_indices = []
+    for i, msg in enumerate(messages):
+        img_count = count_images_in_message(msg)
+        if img_count > 0:
+            analyzed = is_image_analyzed(messages, i)
+            image_msg_indices.append((i, analyzed, img_count))
+    
+    # Count analyzed vs unanalyzed images
+    analyzed_count = sum(count for _, analyzed, count in image_msg_indices if analyzed)
+    unanalyzed_count = sum(count for _, analyzed, count in image_msg_indices if not analyzed)
+    
+    _log(f"Image status: {analyzed_count} analyzed, {unanalyzed_count} unanalyzed, {total_images} total")
+    
+    # Calculate how many we need to remove
+    images_to_remove = total_images - max_images
+    
+    # Check if we're over the HARD API limit (100)
+    over_hard_limit = total_images > MAX_IMAGES_PER_REQUEST
+    
+    if over_hard_limit:
+        # MUST remove enough to get under 100, even if unanalyzed
+        hard_limit_target = MAX_IMAGES_PER_REQUEST - 5  # Leave some buffer
+        images_to_remove = max(images_to_remove, total_images - hard_limit_target)
+        _log(f"Over hard limit ({MAX_IMAGES_PER_REQUEST}), forcing removal of {images_to_remove} images")
+    
+    # Build removal list: analyzed first, then unanalyzed if needed
+    indices_to_prune = set()
+    removed = 0
+    
+    # Pass 1: Remove analyzed images (oldest first)
+    for msg_idx, analyzed, img_count in image_msg_indices:
+        if removed >= images_to_remove:
+            break
+        if analyzed:
+            indices_to_prune.add(msg_idx)
+            removed += img_count
+    
+    # Pass 2: If still need to remove more (over hard limit), remove unanalyzed too
+    if removed < images_to_remove and over_hard_limit:
+        _log(f"Still need to remove {images_to_remove - removed} unanalyzed images")
+        for msg_idx, analyzed, img_count in image_msg_indices:
+            if removed >= images_to_remove:
+                break
+            if not analyzed and msg_idx not in indices_to_prune:
+                indices_to_prune.add(msg_idx)
+                removed += img_count
+    
+    if not indices_to_prune:
+        _log(f"Image pruning skipped: no removable images")
+        return messages
+    
+    _log(f"Image pruning: removing {removed} images from {len(indices_to_prune)} messages")
+    
+    # Build result with pruned images
+    result = []
+    for i, msg in enumerate(messages):
+        if i not in indices_to_prune:
+            result.append(msg)
+            continue
+        
+        content = msg.get("content")
+        if not isinstance(content, list):
+            result.append(msg)
+            continue
+        
+        # Remove images from this message
+        new_content = []
+        for part in content:
+            if isinstance(part, dict) and part.get("type") in ("image_url", "image"):
+                # Replace with text placeholder
+                new_content.append({
+                    "type": "text",
+                    "text": "[Image removed to stay within API limits]"
+                })
+            else:
+                new_content.append(part)
+        
+        result.append({**msg, "content": new_content})
+    
+    _log(f"Image pruning complete: removed images from {len(indices_to_prune)} messages")
+    return result
+
+
+# =============================================================================
 # AI Compaction
 # =============================================================================
 
@@ -428,12 +451,11 @@ def manage_context(
     Called before each LLM request to ensure context fits.
     
     Strategy:
-    1. Estimate current token usage
-    2. Log image status
-    3. Prune images if over limit
-    4. If under threshold, return as-is
-    5. Try pruning old tool outputs first
-    6. If still over threshold, run AI compaction
+    1. Prune old images first (Anthropic has hard limit of 100)
+    2. Estimate current token usage
+    3. If under threshold, return as-is
+    4. Try pruning old tool outputs first
+    5. If still over threshold, run AI compaction
     
     Args:
         messages: Current message history
@@ -444,17 +466,10 @@ def manage_context(
     Returns:
         Managed message list (possibly compacted)
     """
-    # Log image status
-    analyzed, unanalyzed, total = count_images_in_messages(messages)
-    _log(f"Image count: {total} (limit: {IMAGE_LIMIT})")
-    _log(f"Image status: {analyzed} analyzed, {unanalyzed} unanalyzed, {total} total")
-    
-    # Prune images if over limit
-    if total > IMAGE_LIMIT:
-        messages, images_removed, messages_affected = prune_images_from_messages(messages, limit=IMAGE_LIMIT)
-        # if images_removed > 0:
-        #     _log(f"Image pruning: removing {images_removed} images from {messages_affected} messages")
-        #     _log(f"Image pruning complete: removed images from {messages_affected} messages")
+    # Step 0: Always prune images first (hard API limit, not token-based)
+    total_images = count_total_images(messages)
+    if total_images > IMAGE_PRUNE_TARGET:
+        messages = prune_old_images(messages)
     
     total_tokens = estimate_total_tokens(messages)
     usable = get_usable_context()
@@ -462,7 +477,7 @@ def manage_context(
     
     _log(f"Context: {total_tokens} tokens ({usage_pct:.1f}% of {usable})")
     
-    # Check if we need to do anything
+    # Check if we need to do anything for tokens
     if not force_compaction and not is_overflow(total_tokens):
         return messages
     

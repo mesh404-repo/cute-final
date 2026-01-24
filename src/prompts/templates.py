@@ -71,6 +71,11 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
+  - For tasks involving layered or incremental data: Verify that the extracted data includes ALL changes and updates, not just base data. Check that:
+    * Item counts match the expected total (base items + changes/additions)
+    * Updated items have their current/modified values, not original values
+    * New items added through updates are present in the output
+    * The data represents the complete current state after all modifications are applied
 
 ### 4. Component & Functionality Testing
 1. Identify ALL components, modules, or functions mentioned in the task
@@ -78,13 +83,25 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 3. Run any custom tests you created to validate edge cases
 4. If ANY test fails, analyze the failure, fix your solution, and re-run the tests
 5. DO NOT give up if tests fail - iterate until all tests pass
+6. For tasks with layered or incremental data: Test that the process correctly merges all data sources:
+   - Verify that all data sources are accessible and properly processed
+   - Confirm that querying or extracting returns the complete dataset (base + all changes)
+   - Check that the output contains data that reflects the complete current state, not just the base state
 
 ### 5. Edge Cases & Quality
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
 
-### 6. Final Decision
+#### 5. Workspace Cleanup (GC)
+Before completing, clean up any artifacts YOU created that are not part of the deliverable:
+- Remove compiled/cache files: `rm -rf __pycache__ *.pyc .pytest_cache` (if you created them)
+- Remove build outputs: `rm -rf dist build *.egg-info node_modules` (if you installed/built them)
+- Remove temp files: `rm -f *.tmp *.log` (any scratch files you created for testing)
+- Keep ONLY files required by the task - remove intermediate or debug artifacts
+- NEVER remove pre-existing files - only clean up what you created during this task
+
+#### 6. Final Decision
 After completing the above verification:
 - If EVERYTHING is verified and correct (including ALL critical constraints): Summarize what was done and confirm completion
 - If ANY constraint is violated or ANYTHING is missing or broken: Fix it now using the appropriate tools
@@ -100,6 +117,31 @@ After completing the above verification:
 
 Proceed with verification now.
 </system-reminder>"""
+
+# Template for shell command timeout errors
+SHELL_TIMEOUT_TEMPLATE = """Command timed out after {timeout}s.
+
+The command may still be running in the background. Consider:
+1. Check if the process is still running: `ps aux | grep <process>`
+2. Increase timeout if the operation legitimately needs more time
+3. Check if the command is waiting for input (use -y flags, heredocs, etc.)
+4. Break the command into smaller steps
+
+Partial output before timeout:
+{output}"""
+
+# Template for shell command execution errors
+SHELL_ERROR_TEMPLATE = """Command failed with exit code {exit_code}.
+
+Error analysis:
+1. What does this error message indicate?
+2. Is this a syntax error, missing dependency, permission issue, or logic error?
+3. What is the root cause?
+4. How can you fix it?
+
+Output:
+{output}"""
+
 
 # Template for tool invalid parameters guidance
 TOOL_INVALID_GUIDANCE_TEMPLATE = """

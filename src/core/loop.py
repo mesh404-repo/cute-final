@@ -41,7 +41,12 @@ from src.output.jsonl import (
     make_file_change_item,
 )
 from src.prompts.system import get_system_prompt, get_initial_prompt
-from src.prompts.templates import VERIFICATION_PROMPT_TEMPLATE, TOOL_FAILURE_GUIDANCE_TEMPLATE, TOOL_INVALID_GUIDANCE_TEMPLATE
+from src.prompts.templates import (
+    VERIFICATION_PROMPT_TEMPLATE,
+    VERIFICATION_CONFIRMATION_TEMPLATE,
+    TOOL_FAILURE_GUIDANCE_TEMPLATE,
+    TOOL_INVALID_GUIDANCE_TEMPLATE,
+)
 from src.utils.truncate import middle_out_truncate, APPROX_BYTES_PER_TOKEN
 from src.core.compaction import (
     manage_context,
@@ -211,6 +216,8 @@ def run_agent_loop(
     total_cached_tokens = 0
     pending_completion = False
     last_agent_message = ""
+    verification_phase: Optional[str] = None  # None | "first" | "confirmation"
+    verification_result = ""
     
     max_iterations = config.get("max_iterations", 200)
     cache_enabled = config.get("cache_enabled", True)
@@ -357,36 +364,48 @@ def run_agent_loop(
         has_function_calls = response.has_function_calls() if hasattr(response, "has_function_calls") else bool(response.function_calls)
         
         if not has_function_calls:
-            # No tool calls - agent thinks it's done
+            # No tool calls - agent thinks it's done or verification/confirmation complete
             _log("No tool calls in response")
 
             if total_cost >= cost_limit:
                 break
-            
-            # Always do verification before completing (self-questioning)
-            if pending_completion:
-                # Agent already verified - complete the task
-                _log("Task completion confirmed after self-verification")
+
+            # Verification workflow: first → confirmation → complete
+            if verification_phase == "confirmation":
+                # LLM confirmed using previous verification (or did missing-only checks)
+                _log("Task completion confirmed after verification confirmation")
                 break
-            else:
-                # First time without tool calls - ask for self-verification
-                pending_completion = True
+
+            if verification_phase == "first":
+                # First verification round just completed – store result, request confirmation
+                verification_result = response_text
+                verification_phase = "confirmation"
                 messages.append({"role": "assistant", "content": response_text})
-                
-                # Build verification prompt with original instruction
-                verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
-                    instruction=ctx.instruction
+
+                confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
+                    instruction=ctx.instruction,
+                    previous_verification_result=verification_result,
                 )
-                
                 messages.append({
-                    "role": "user", 
-                    "content": verification_prompt,
+                    "role": "user",
+                    "content": confirmation_prompt,
                 })
-                _log("Requesting self-verification before completion")
+                _log("Requesting confirmation: use previous verification, confirm or fix gaps only")
                 continue
-        
-        # Reset pending completion flag (agent is still working)
-        pending_completion = False
+
+            # No verification yet – request first self-verification
+            verification_phase = "first"
+            messages.append({"role": "assistant", "content": response_text})
+
+            verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
+                instruction=ctx.instruction
+            )
+            messages.append({
+                "role": "user",
+                "content": verification_prompt,
+            })
+            _log("Requesting self-verification before completion")
+            continue        
         
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}

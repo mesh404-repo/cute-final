@@ -350,7 +350,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "apply_patch": APPLY_PATCH_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
-    "web_search": WEB_SEARCH_SPEC,
+    # "web_search": WEB_SEARCH_SPEC,
     "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
     "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,
 }

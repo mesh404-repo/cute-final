@@ -237,13 +237,11 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for documentation and coding best practices. Use this tool judiciously and only for reference information.
+    "description": """Search the web for documentation. Use this tool judiciously and only for reference information.
 
 Use web_search ONLY for:
 - Official documentation, API references, or library specifications
-- Coding best practices, design patterns, or conventions
 - Examples of how to use specific technologies, commands, or libraries
-- Understanding error messages or unfamiliar concepts that require external reference
 
 DO NOT use web_search for:
 - **CRITICAL: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**

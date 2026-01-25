@@ -84,12 +84,16 @@ def _add_cache_control_to_message(
         new_content = list(content)
         for i in range(len(new_content) - 1, -1, -1):
             part = new_content[i]
-            if isinstance(part, dict) and part.get("type") == "text":
+            # Only add cache_control to non-empty text blocks
+            if isinstance(part, dict) and part.get("type") == "text" and part.get("text"):
                 new_content[i] = {**part, "cache_control": cache_control}
                 break
         return {**msg, "content": new_content}
     
     if isinstance(content, str):
+        # Don't add cache_control to empty strings
+        if not content:
+            return msg
         return {
             **msg,
             "content": [
@@ -277,14 +281,17 @@ def run_agent_loop(
             
             for attempt in range(1, max_retries + 1):
                 try:
+                    # Build extra_body - only include reasoning for models that support it
+                    extra_body = {}
+                    reasoning_effort = config.get("reasoning_effort", "none")
+                    if reasoning_effort and reasoning_effort != "none":
+                        extra_body["reasoning"] = {"effort": reasoning_effort}
+                    
                     response = llm.chat(
                         cached_messages,
                         tools=tool_specs,
                         max_tokens=config.get("max_tokens", 16384),
-                        extra_body={
-                            "reasoning": {"effort": config.get("reasoning_effort", "xhigh")},
-                        },
-                        temperature=temperature,
+                        extra_body=extra_body if extra_body else None,
                     )
                     
                     prev_messages = copy.deepcopy(messages)

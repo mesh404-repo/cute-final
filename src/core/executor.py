@@ -297,7 +297,7 @@ class AgentExecutor:
             return self._assess_command_risk(cmd)
         
         # Default risk by tool category
-        if tool_name in ("read_file", "list_dir", "grep_files", "view_image"):
+        if tool_name in ("read_file", "list_dir", "grep_files", "view_image", "extract_video_frames", "extract_keyframes"):
             return RiskLevel.SAFE
         
         if tool_name == "write_file":

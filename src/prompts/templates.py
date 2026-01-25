@@ -71,11 +71,6 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
-  - For tasks involving layered or incremental data: Verify that the extracted data includes ALL changes and updates, not just base data. Check that:
-    * Item counts match the expected total (base items + changes/additions)
-    * Updated items have their current/modified values, not original values
-    * New items added through updates are present in the output
-    * The data represents the complete current state after all modifications are applied
 
 ### 4. Component & Functionality Testing
 1. Identify ALL components, modules, or functions mentioned in the task
@@ -83,10 +78,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 3. Run any custom tests you created to validate edge cases
 4. If ANY test fails, analyze the failure, fix your solution, and re-run the tests
 5. DO NOT give up if tests fail - iterate until all tests pass
-6. For tasks with layered or incremental data: Test that the process correctly merges all data sources:
-   - Verify that all data sources are accessible and properly processed
-   - Confirm that querying or extracting returns the complete dataset (base + all changes)
-   - Check that the output contains data that reflects the complete current state, not just the base state
+
 
 ### 5. Edge Cases & Quality
 - Are there any edge cases the task mentioned that you haven't handled?

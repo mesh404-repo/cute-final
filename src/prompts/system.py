@@ -923,6 +923,7 @@ You have access to the `web_search` tool which allows you to search the web for 
 
 **When NOT to use web search:**
 - For assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These tasks should be solved using direct computation, mathematical libraries, or algorithmic approaches rather than searching for solutions online.
+- When the task mentions checking, verifying, or satisfying specific requirements, specifications, constraints, or technical standards. These should be addressed through direct analysis of the task requirements, codebase examination, and logical reasoning rather than searching online.
 - As your primary tool for problem solving. Web search is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
 - For finding complete solutions or answers to the task at hand. Use web search only for reference information, not for solving the actual problem.
 

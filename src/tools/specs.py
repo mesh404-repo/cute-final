@@ -247,6 +247,7 @@ Use web_search ONLY for:
 
 DO NOT use web_search for:
 - Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
+- When the task mentions checking, verifying, or satisfying specific requirements, specifications, constraints, or technical standards. These should be addressed through direct analysis of the task requirements, codebase examination, and logical reasoning rather than searching online.
 - As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
 - Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.
 

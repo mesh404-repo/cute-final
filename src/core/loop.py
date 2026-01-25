@@ -387,6 +387,8 @@ def run_agent_loop(
             # No tool calls - agent thinks it's done or verification/confirmation complete
             _log("No tool calls in response")
 
+            _log(f"response_text: {response_text}")
+
             if total_cost >= cost_limit:
                 break
 
@@ -437,7 +439,6 @@ def run_agent_loop(
             _log("Requesting self-verification before completion")
             continue        
         
-        verification_phase = None
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
         

@@ -237,15 +237,25 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for information about security vulnerabilities, bypass techniques, or library-specific behavior.
-Use when stuck on security challenges to research known approaches.
-Be specific in queries: include library names, vulnerability types, or technique keywords.""",
+    "description": """Search the web for general information, documentation, code examples, and solutions.
+
+Use web_search for:
+- General information about technologies, commands, libraries, or APIs
+- Documentation, tutorials, or code examples
+- Researching how to accomplish specific tasks
+- Understanding patterns or best practices in open source projects
+- Finding solutions when stuck on problems
+
+DO NOT use web_search for:
+- Assignments involving difficult mathematical calculations, complex numerical computations, or algorithmic problems requiring precise mathematical reasoning. These should be solved using direct computation, mathematical libraries, or algorithmic approaches rather than searching for answers online.
+
+Be specific in queries: include library names, error messages, or specific concepts.""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Search query. Examples: 'BeautifulSoup XSS bypass', 'html.parser malformed comment vulnerability'",
+                "description": "Search query for general information (not mathematical calculations). Examples: 'python subprocess timeout example', 'bash script error handling best practices'",
             },
             "num_results": {
                 "type": "integer",

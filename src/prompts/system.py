@@ -922,6 +922,9 @@ You have access to the `web_search` tool which allows you to search the web for 
 - When you need documentation, tutorials, or code examples
 - When working with open source projects and need to understand patterns or best practices
 
+**When NOT to use web search:**
+- For assignments that involve difficult mathematical calculations, complex numerical computations, or algorithmic problems that require precise mathematical reasoning. These tasks should be solved using direct computation, mathematical libraries, or algorithmic approaches rather than searching for answers online. Web search is not appropriate when the task requires working through mathematical formulas, performing calculations, or deriving solutions through mathematical methods.
+
 **How to use web search effectively:**
 - Use specific, targeted queries with relevant keywords (library names, error messages, specific concepts)
 - Use `search_type="code"` when looking for code examples or GitHub repositories

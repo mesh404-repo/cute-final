@@ -237,25 +237,28 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for general information, documentation, code examples, and solutions.
+    "description": """Search the web for documentation and coding best practices. Use this tool judiciously and only for reference information.
 
-Use web_search for:
-- General information about technologies, commands, libraries, or APIs
-- Documentation, tutorials, or code examples
-- Researching how to accomplish specific tasks
-- Understanding patterns or best practices in open source projects
-- Finding solutions when stuck on problems
+Use web_search ONLY for:
+- Official documentation, API references, or library specifications
+- Coding best practices, design patterns, or conventions
+- Examples of how to use specific technologies, commands, or libraries
+- Understanding error messages or unfamiliar concepts that require external reference
 
 DO NOT use web_search for:
-- Assignments involving difficult mathematical calculations, complex numerical computations, or algorithmic problems requiring precise mathematical reasoning. These should be solved using direct computation, mathematical libraries, or algorithmic approaches rather than searching for answers online.
+- Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
+- As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
+- Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.
 
-Be specific in queries: include library names, error messages, or specific concepts.""",
+Usage constraints:
+- Do not call this tool more than 5 times per task. Use it sparingly and make each search count.
+- Be specific in queries: include library names, error messages, or specific concepts.""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Search query for general information (not mathematical calculations). Examples: 'python subprocess timeout example', 'bash script error handling best practices'",
+                "description": "Search query for documentation or best practices (not for solving problems or mathematical calculations). Examples: 'python subprocess API documentation', 'bash error handling best practices'",
             },
             "num_results": {
                 "type": "integer",

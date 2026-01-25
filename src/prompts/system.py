@@ -37,7 +37,8 @@ You can search the web for information. Guidelines:
 - Cite sources when providing information
 - Verify information from multiple sources when possible
 - Be clear about the recency of information
-- IMPORTANT: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task"""
+- IMPORTANT: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task
+- IMPORTANT: If the task description mentions checking some site, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task"""
 
 CODING_ASSISTANT_BASE = """You are an expert software engineer who helps users with coding tasks.
 
@@ -924,6 +925,7 @@ You have access to the `web_search` tool which allows you to search the web for 
 
 **When NOT to use web search:**
 - **CRITICAL: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
+- **CRITICAL: If the task description mentions checking some site, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
 - For assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These tasks should be solved using direct computation, mathematical libraries, or algorithmic approaches rather than searching for solutions online.
 - As your primary tool for problem solving. Web search is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
 - For finding complete solutions or answers to the task at hand. Use web search only for reference information, not for solving the actual problem.

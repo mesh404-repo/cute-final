@@ -247,6 +247,7 @@ Use web_search ONLY for:
 
 DO NOT use web_search for:
 - **CRITICAL: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
+- **CRITICAL: If the task description mentions checking some site, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
 - Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
 - As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
 - Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.

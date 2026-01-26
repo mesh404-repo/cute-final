@@ -269,13 +269,18 @@ TRANSCRIPT_SPEC: dict[str, Any] = {
 This tool uploads the video and asks it to analyze/transcribe based on your instruction.
 
 **CRITICAL: Be VERY PRECISE in your instruction!**
-- What exactly you want extracted (dialogue, text on screen, actions, commands, etc.)
+- What exactly you want extracted (dialogue, text on screen, actions, inputs, etc.)
 - The format you need (list, transcript, step-by-step, etc.)
 - Any specific details to focus on
 - The purpose/goal of the transcription
 
+**For extracting sequential inputs/text from videos:**
+When extracting text inputs or sequential items that appear on screen, use an instruction like:
+"Extract ALL text inputs/items shown on screen, in the exact order they appear. Include EVERY item: single characters/letters, multi-word items, items with parameters or lists, and sequences. Output as a plain list, one item per line, with no additional text. Capture every single input shown - do not skip any items, even if repetitive. Pay close attention to exact spelling, capitalization, and formatting. Ensure no items are missed."
+
 **Good instruction examples:**
-- "Extract all text commands shown on screen in this video. Output as a list of commands, one per line."
+- "Extract all text items shown on screen in this video. Output as a list of items, one per line."
+- "Extract ALL text inputs shown on screen in the exact order they appear. List each input on a separate line. Include every input: single characters, multi-word items, items with parameters, and sequences. Output only the inputs, one per line, no explanations."
 - "Transcribe all spoken dialogue in this video, with speaker labels if possible."
 - "List all the steps shown in this tutorial, in order."
 - "Extract the code snippets visible on screen in this programming tutorial."
@@ -283,6 +288,7 @@ This tool uploads the video and asks it to analyze/transcribe based on your inst
 **Bad instruction examples:**
 - "Transcribe this" (too vague)
 - "What's in this video?" (not specific enough)
+- "Get the items" (not specific about format or completeness)
 
 Supports: YouTube, Twitter/X, TikTok, Vimeo, and direct video URLs.
 

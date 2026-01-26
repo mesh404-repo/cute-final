@@ -642,6 +642,40 @@ Partial output before timeout:
         try:
             # Send directly to Gemini 3 Pro via OpenRouter with video_url
             # OpenRouter supports direct YouTube/video URLs without downloading
+            # Enhanced prompt for better accuracy and completeness
+            enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
+
+{instruction}
+
+CRITICAL ACCURACY REQUIREMENTS:
+- Extract EVERY item exactly as it appears, in the exact order shown
+- Do NOT skip any items, even if they seem repetitive
+- Do NOT combine multiple items into one line
+- Do NOT add items that weren't actually present
+- Pay close attention to:
+  * Exact spelling and capitalization
+  * Short items that appear quickly or briefly on screen
+  * Single-character or single-word items
+  * Multi-word items and phrases
+  * Items with parameters, punctuation, or special formatting
+  * Sequences of related items
+- If you're unsure about an item, watch that section multiple times
+- Capture EVERY single input, text, or action shown, including:
+  * Single character or letter items
+  * Multi-word items
+  * Items with parameters, lists, or complex formatting
+  * Navigation or directional sequences
+  * Action sequences
+
+OUTPUT FORMAT:
+- Follow the exact format specified in the instruction
+- One item per line (unless format specifies otherwise)
+- No additional text or explanations unless requested
+- Preserve exact spelling, capitalization, and formatting
+- Maintain the exact order as they appear
+
+Be thorough, complete, and accurate. Missing even one item or getting spelling/formatting wrong will cause failure."""
+            
             gemini_payload = {
                 "model": "google/gemini-3-pro-preview",
                 "messages": [
@@ -650,15 +684,7 @@ Partial output before timeout:
                         "content": [
                             {
                                 "type": "text",
-                                "text": f"""Analyze this video and follow these instructions precisely:
-
-{instruction}
-
-Important:
-- Be thorough and complete
-- Follow the requested format exactly
-- Include all relevant details from the video
-- Output in English"""
+                                "text": enhanced_prompt
                             },
                             {
                                 "type": "video_url",

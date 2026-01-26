@@ -607,6 +607,15 @@ Follow language-specific best practices in your implementations:
 - Code quality and maintainability
 - Language/framework conventions and idioms
 
+### Handling corrupted or malformed data
+
+When working on tasks involving data recovery, file corruption repair, or handling malformed files (e.g., corrupted databases, encrypted files, damaged archives, corrupted logs):
+
+- **Always backup first**: Before attempting any recovery operations, create backups of all related files. This includes the primary file(s) mentioned in the task, any associated files, and any files in the same directory that might be related to the data structure.
+- **Backup before modification**: Complete the backup step before proceeding to any analysis, repair, or recovery operations. This ensures you can revert if recovery attempts fail or make the situation worse.
+- **Preserve original state**: Keep backups in a separate location (e.g., a `backup/` subdirectory) with clear naming that indicates they are the original state before recovery attempts.
+- **Identify all related files**: When the task mentions corrupted or malformed data, identify all files that are part of the data structure (main files, log files, index files, metadata, etc.) and back them all up together.
+
 ## Planning (recommended for complex tasks)
 
 For tasks requiring multiple steps, consider using the `update_plan` tool to track your progress:

@@ -762,7 +762,7 @@ Partial output before timeout:
             # Send directly to Gemini 3 Pro via OpenRouter with video_url
             # OpenRouter supports direct YouTube/video URLs without downloading
             gemini_payload = {
-                "model": "google/gemini-3-pro",
+                "model": "google/gemini-3-pro-preview",
                 "messages": [
                     {
                         "role": "user",

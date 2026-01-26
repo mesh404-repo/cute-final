@@ -755,6 +755,8 @@ When task descriptions include example output:
 
 **FUNDAMENTAL PRINCIPLE: Take the example output as output format only, and never rely on it to solve problems.**
 
+**CRITICAL: Don't try to derive any insights from the example output. Consider it merely as an output format.**
+
 **HARD RULE: Never reverse-engineer requirements from example values.**
 
 You will naturally compare your output to examples. When you notice differences:

@@ -55,6 +55,7 @@ Write out each critical constraint you found, then VERIFY EACH ONE explicitly be
 
 ### 0.5. Example format vs exact output (IMPORTANT)
 - **FUNDAMENTAL PRINCIPLE:** Take the example output as output format only, and never rely on it to solve problems.
+- **CRITICAL: Don't try to derive any insights from the example output. Consider it merely as an output format.**
 - If the task uses **"example output format"**, **"example format"**, **"e.g."**, **"for example"**, or similar when showing sample output: those values are **illustrative only**. They demonstrate structure (e.g. JSON shape, key/value types), not exact data to match. **Never use example values to guide your solution approach.**
 - **CRITICAL - Example addresses/offsets/numeric values:** If an example shows addresses, offsets, or numeric values, **do NOT add base addresses, offsets, or transformations** to match. Use the actual addresses/values from YOUR input data. Example values come from different input—your actual values are correct.
 - **Verification in that case:** Check **format/structure only** (e.g. valid JSON, correct key shape, values are integers not strings, structure matches). Do **NOT** verify that specific keys, addresses, offsets, or values match the example—different data will produce different values, and that is expected.

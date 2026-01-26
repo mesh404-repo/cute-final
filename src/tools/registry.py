@@ -642,8 +642,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             # Build output
             output_parts = [
                 f"## Video Analysis: {video_url}",
-                f"**Instruction:** {instruction[:200]}{'...' if len(instruction) > 200 else ''}",
-                f"**Model:** Gemini 3 Pro Preview",
+                f"**Instruction:** {instruction}",
                 "",
                 "---",
                 "",
@@ -662,7 +661,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             return ToolResult.ok("\n".join(output_parts))
             
         except httpx.HTTPStatusError as e:
-            error_msg = e.response.text[:500] if e.response else str(e)
+            error_msg = e.response.text if e.response else str(e)
             return ToolResult.fail(f"API error: {e.response.status_code} - {error_msg}")
         except Exception as e:
             return ToolResult.fail(f"Transcript failed: {e}")

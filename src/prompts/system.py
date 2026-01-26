@@ -598,15 +598,23 @@ When approaching any task, follow these principles:
 - Explore the codebase to verify assumptions - don't rely on assumptions without verification
 - Remember that solutions are validated by tests that may not be visible to you during development
 
-### Data safety and backups
+### Data safety and backups (CRITICAL FIRST STEP)
 
-When working with tasks involving data files, databases, or recovery operations:
+**MANDATORY**: For tasks involving data files, databases, recovery operations, or any mention of corrupted/encrypted files:
 
-- **Always backup first**: Before modifying, repairing, or attempting recovery on any data files, create backups of the original files
-- **Identify related files**: For database tasks, backup both the main database file and related files
-- **Backup before exploration**: Even if you're just exploring or reading data, if the task involves corrupted or potentially damaged files, backup first to preserve the original state
-- **Use standard backup patterns**: Create backups with clear naming (e.g., `filename.backup`, `filename.original`) and verify backups were created successfully before proceeding
-- **Generalized approach**: Apply this principle to any task where data integrity is critical - backup original files before any operations that could modify or affect them
+- **Backup FIRST, before ANY other operations**: This is your FIRST action, before reading, exploring, querying, or modifying files. Do not run any commands on data files until backups are created.
+- **Identify all related files**: For database tasks, identify and backup the main database file AND all related files (e.g., for SQLite: `.db`, `.db-wal`, `.db-shm` files). For other data formats, identify all components.
+- **Backup pattern**: Use commands like `cp /path/to/file /path/to/file.backup && cp /path/to/related-file /path/to/related-file.backup && echo "Backups created"` to create backups and verify success.
+- **Verify backups**: After creating backups, verify they exist and have non-zero size before proceeding with any other operations.
+- **Generalized rule**: If a task mentions data recovery, database operations, corrupted files, encrypted files, or data extraction - backup ALL related files as your very first step, before any exploration or investigation.
+
+**Example**: For a SQLite database task, your first commands should be:
+```
+cp /app/file.db /app/file.backup && echo "Backups created"
+ls -lh /app/*.backup  # Verify backups exist
+```
+
+Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
 
 ### Best practices
 

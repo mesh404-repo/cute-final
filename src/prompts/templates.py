@@ -53,6 +53,11 @@ Before anything else, extract ALL critical constraints from the task that are ea
 **Step E: List your extracted constraints:**
 Write out each critical constraint you found, then VERIFY EACH ONE explicitly below.
 
+### 0.5. Example format vs exact output (IMPORTANT)
+- If the task uses **"example output format"**, **"example format"**, **"e.g."**, **"for example"**, or similar when showing sample output: those values are **illustrative only**. They demonstrate structure (e.g. JSON shape, key/value types), not exact data to match.
+- **Verification in that case:** Check **format/structure only** (e.g. valid JSON, correct key shape, values are integers not strings, structure matches). Do **NOT** verify that specific keys or values match the example—different data will produce different values, and that is expected.
+- **Exact value checking** applies only when the task explicitly requires matching specific values (e.g. "output must be exactly X"). When in doubt, prefer format checking over exact-value matching for example-style output.
+
 ### 1. Requirements Analysis
 - Re-read the ENTIRE original task above word by word
 - List EVERY requirement, constraint, and expected outcome mentioned
@@ -71,6 +76,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
+  - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values to match the example
 
 ### 4. Component & Functionality Testing
 1. Identify ALL components, modules, or functions mentioned in the task

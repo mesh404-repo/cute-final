@@ -237,18 +237,27 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for general information and official documentation only.
+    "description": """Search the web for documentation and coding best practices. Use this tool judiciously and only for reference information.
 
-Use ONLY for: general info about technologies/concepts, official docs (API reference, specs), factual or conceptual clarification.
-Do NOT use for: code examples, tutorials, solutions, Stack Overflow, GitHub repos, how-to guides, or any implementation-focused lookup.
+Use web_search ONLY for:
+- Official documentation, API references, or library specifications
+- Coding best practices, design patterns, or conventions
+- Examples of how to use specific technologies, commands, or libraries
+- Understanding error messages or unfamiliar concepts that require external reference
 
-Keep queries focused on documentation or general information (e.g. 'Python subprocess module official docs', 'HTTP status codes reference').""",
+DO NOT use web_search for:
+- Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
+- As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
+- Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.
+
+Usage constraints:
+- Be specific in queries: include library names, error messages, or specific concepts.""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Search query for general information or documentation only. Examples: 'Python asyncio official documentation', 'RFC 7231 HTTP methods'",
+                "description": "Search query for documentation or best practices (not for solving problems or mathematical calculations). Examples: 'python subprocess API documentation', 'bash error handling best practices'",
             },
             "num_results": {
                 "type": "integer",

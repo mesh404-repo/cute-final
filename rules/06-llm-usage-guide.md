@@ -13,7 +13,7 @@ from src.llm.client import LiteLLMClient, LLMError, CostLimitExceeded
 
 # Create the LLM client
 llm = LiteLLMClient(
-    model="openrouter/anthropic/claude-opus-4.5:nitro",
+    model="openrouter/anthropic/claude-opus-4.5",
     temperature=0.0,  # 0 = deterministic
     max_tokens=16384,
     cost_limit=10.0   # Cost limit in $

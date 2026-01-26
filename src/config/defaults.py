@@ -25,7 +25,7 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Model to use via OpenRouter (prefix with openrouter/ for litellm)
-    "model": "openrouter/anthropic/claude-opus-4.5:nitro",
+    "model": "openrouter/anthropic/claude-opus-4.5",
     
     # Provider
     "provider": "openrouter",

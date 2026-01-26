@@ -274,7 +274,7 @@ FETCH_URL_SPEC: dict[str, Any] = {
     "name": "fetch_url",
     "description": """Fetches content from URLs with automatic content type detection:
 
-**WEBPAGES**: Returns content using Firecrawl API with configurable formats
+**WEBPAGES**: Returns content with configurable formats
 **IMAGES** (.png, .jpg, .gif, etc.): Downloads and returns as base64 for vision analysis
 **VIDEOS** (.mp4, .webm, etc.): Downloads to cache and provides frame extraction commands
 
@@ -321,12 +321,11 @@ URLs THAT WILL FAIL - DO NOT ATTEMPT:
 
 TRANSCRIPT_SPEC: dict[str, Any] = {
     "name": "transcript",
-    "description": """Analyze video content using Gemini 3 Pro Preview AI model.
+    "description": """Analyze video content.
 
-This tool uploads the video to Gemini and asks it to analyze/transcribe based on your instruction.
+This tool uploads the video and asks it to analyze/transcribe based on your instruction.
 
 **CRITICAL: Be VERY PRECISE in your instruction!**
-The AI model needs clear, specific instructions about:
 - What exactly you want extracted (dialogue, text on screen, actions, commands, etc.)
 - The format you need (list, transcript, step-by-step, etc.)
 - Any specific details to focus on
@@ -344,7 +343,7 @@ The AI model needs clear, specific instructions about:
 
 Supports: YouTube, Twitter/X, TikTok, Vimeo, and direct video URLs.
 
-Returns the AI's analysis/transcription based on your instruction.""",
+Returns the analysis/transcription based on your instruction.""",
     "parameters": {
         "type": "object",
         "properties": {

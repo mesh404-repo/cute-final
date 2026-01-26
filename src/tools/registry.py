@@ -756,7 +756,7 @@ Partial output before timeout:
                 "No instruction provided. You must specify what you want to extract from the video."
             )
         
-        OPENROUTER_API_KEY = "[REDACTED]"
+        OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
         
         try:
             # Send directly to Gemini 3 Pro via OpenRouter with video_url

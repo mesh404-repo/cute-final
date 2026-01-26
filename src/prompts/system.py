@@ -717,6 +717,14 @@ For all of testing, running, building, and formatting, do not attempt to fix unr
 
 Since you are running in fully autonomous mode, proactively run tests, lint and do whatever you need to ensure you've completed the task. You must persist and work around constraints to solve the task for the user. You MUST do your utmost best to finish the task and validate your work before yielding. Even if you don't see local patterns for testing, you may add tests and scripts to validate your work. Just remove them before yielding.
 
+### Target output and end-to-end validation
+
+When the task specifies a **desired output**, **target result**, or **reference** (e.g. a file, sequence, or structure your solution must produce or match):
+
+- **Treat the target as the source of truth.** Your deliverables must yield exactly that when used as intended. Use the target to validate your solution, not only local or format checks.
+- **Validate end-to-end.** If your solution produces intermediates that are combined or processed into a final result (e.g. fragments → composed output, components → product), run the full pipeline or equivalent check. Confirm that the **composed result matches the target**. Verifying each part in isolation is not enough—the combined result must match the specification.
+- **Order and connectivity matter.** When multiple parts combine into one output, the order and how they connect must match the task. Explicitly verify that the composed result equals the required target before considering the task complete.
+
 ### Edge cases
 
 Identify and handle ALL edge cases relevant to your task:

@@ -77,6 +77,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
   - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values to match the example
+  - **Target/composed output:** If the task specifies a desired output, target result, or reference (e.g. a sequence, file, or structure your solution must produce or match), run the full pipeline or tests and confirm the **composed result matches the target**. Don't assume correctness from partial or format-only checks—validate end-to-end.
 
 ### 4. Component & Functionality Testing
 1. Identify ALL components, modules, or functions mentioned in the task

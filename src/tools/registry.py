@@ -647,25 +647,6 @@ Partial output before timeout:
 
 {instruction}
 
-CRITICAL ACCURACY REQUIREMENTS:
-- Extract EVERY item exactly as it appears, in the exact order shown
-- Do NOT skip any items, even if they seem repetitive
-- Do NOT combine multiple items into one line
-- Do NOT add items that weren't actually present
-- Pay close attention to:
-  * Exact spelling and capitalization
-  * Short items that appear quickly or briefly on screen
-  * Single-character or single-word items
-  * Multi-word items and phrases
-  * Items with parameters, punctuation, or special formatting
-  * Sequences of related items
-- If you're unsure about an item, watch that section multiple times
-- Capture EVERY single input, text, or action shown, including:
-  * Single character or letter items
-  * Multi-word items
-  * Items with parameters, lists, or complex formatting
-  * Navigation or directional sequences
-  * Action sequences
 
 OUTPUT FORMAT:
 - Follow the exact format specified in the instruction

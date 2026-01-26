@@ -237,34 +237,31 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for documentation and coding best practices. Use this tool judiciously and only for reference information.
+    "description": """Search the web for information, documentation, code examples, and solutions to help solve tasks.
 
-Use web_search ONLY for:
-- Official documentation, API references, or library specifications
-- Coding best practices, design patterns, or conventions
-- Examples of how to use specific technologies, commands, or libraries
-- Understanding error messages or unfamiliar concepts that require external reference
+Use web search when:
+- You encounter unfamiliar technologies, libraries, frameworks, or APIs
+- You're stuck on a problem and need to find solutions or examples
+- You need documentation, tutorials, or code examples
+- You need to research how to accomplish a specific task
+- You're working with open source projects and need to understand patterns or best practices
 
-DO NOT use web_search for:
-- Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
-- As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
-- Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.
-
-Usage constraints:
-- Be specific in queries: include library names, error messages, or specific concepts.""",
+Be specific in queries: include library names, error messages, specific concepts, or task descriptions. Use search_type='code' for code examples, 'docs' for documentation, or 'general' for broad searches.""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Search query for documentation or best practices (not for solving problems or mathematical calculations). Examples: 'python subprocess API documentation', 'bash error handling best practices'",
+                "description": "The search query - be specific and include relevant keywords, library names, or task descriptions",
             },
             "num_results": {
-                "type": "integer",
-                "description": "Number of results to return (1-10, default 5)",
-                "default": 5,
-                "minimum": 1,
-                "maximum": 10,
+                "type": "number",
+                "description": "Number of results to return (default: 5, max: 10)",
+            },
+            "search_type": {
+                "type": "string",
+                "enum": ["general", "code", "docs", "news", "images"],
+                "description": "Type of search: 'general' for broad searches, 'code' for code examples/GitHub/Stack Overflow, 'docs' for documentation/tutorials, 'news' for recent news, 'images' for image search",
             },
         },
         "required": ["query"],

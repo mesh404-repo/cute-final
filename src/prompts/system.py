@@ -29,7 +29,8 @@ You can read, write, and modify files. Guidelines:
 - Read files to understand context before making changes
 - Make targeted edits rather than rewriting entire files
 - Create backups when making significant changes
-- Respect file permissions and ownership"""
+- Respect file permissions and ownership
+- For data recovery, database operations, or tasks involving critical data files: always backup original files before any modifications or recovery attempts"""
 
 WEB_SEARCH_CONTEXT = """## Web Search
 You can search the web for general information and official documentation only. Do not use it for code examples, tutorials, solutions, or implementation-focused lookup.
@@ -597,6 +598,16 @@ When approaching any task, follow these principles:
 - Explore the codebase to verify assumptions - don't rely on assumptions without verification
 - Remember that solutions are validated by tests that may not be visible to you during development
 
+### Data safety and backups
+
+When working with tasks involving data files, databases, or recovery operations:
+
+- **Always backup first**: Before modifying, repairing, or attempting recovery on any data files, create backups of the original files
+- **Identify related files**: For database tasks, backup both the main database file and related files
+- **Backup before exploration**: Even if you're just exploring or reading data, if the task involves corrupted or potentially damaged files, backup first to preserve the original state
+- **Use standard backup patterns**: Create backups with clear naming (e.g., `filename.backup`, `filename.original`) and verify backups were created successfully before proceeding
+- **Generalized approach**: Apply this principle to any task where data integrity is critical - backup original files before any operations that could modify or affect them
+
 ### Best practices
 
 Follow language-specific best practices in your implementations:
@@ -606,15 +617,6 @@ Follow language-specific best practices in your implementations:
 - Resource cleanup and management
 - Code quality and maintainability
 - Language/framework conventions and idioms
-
-### Handling corrupted or malformed data
-
-When working on tasks involving data recovery, file corruption repair, or handling malformed files (e.g., corrupted databases, encrypted files, damaged archives, corrupted logs):
-
-- **Always backup first**: Before attempting any recovery operations, create backups of all related files. This includes the primary file(s) mentioned in the task, any associated files, and any files in the same directory that might be related to the data structure.
-- **Backup before modification**: Complete the backup step before proceeding to any analysis, repair, or recovery operations. This ensures you can revert if recovery attempts fail or make the situation worse.
-- **Preserve original state**: Keep backups in a separate location (e.g., a `backup/` subdirectory) with clear naming that indicates they are the original state before recovery attempts.
-- **Identify all related files**: When the task mentions corrupted or malformed data, identify all files that are part of the data structure (main files, log files, index files, metadata, etc.) and back them all up together.
 
 ## Planning (recommended for complex tasks)
 

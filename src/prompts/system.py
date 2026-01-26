@@ -753,6 +753,8 @@ Before marking a task as complete, you MUST validate:
 
 When task descriptions include example output:
 
+**FUNDAMENTAL PRINCIPLE: Take the example output as output format only, and never rely on it to solve problems.**
+
 **HARD RULE: Never reverse-engineer requirements from example values.**
 
 You will naturally compare your output to examples. When you notice differences:
@@ -774,11 +776,13 @@ The example was generated from different input data. Your output WILL have diffe
 - **Never add base addresses, offsets, or transformations** unless the task description EXPLICITLY requires it (not inferred from examples)
 
 **What to do instead:**
+- **Treat examples as format-only** - use them to understand structure (JSON shape, key/value types, etc.), never to solve problems or infer logic
 - Implement the most literal interpretation of the task instructions
 - Use the actual addresses, offsets, and values from YOUR input data, not from examples
 - If your output has correct STRUCTURE (format, types, fields) but different VALUES - you're done
 - Only add transformations EXPLICITLY required by the task description (stated in words, not inferred from examples)
 - Self-comparison to examples proves nothing - only the actual test can verify correctness
+- **Never use example values to guide your solution approach** - solve the problem using the task description and your input data only
 
 **When values differ from example:** That's expected. Stop. Do not adjust. Move on. Do not add offsets, base addresses, or any transformations to match example values.
 

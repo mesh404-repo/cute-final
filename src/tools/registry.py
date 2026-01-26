@@ -193,11 +193,7 @@ class ToolRegistry:
             elif name == "web_search":
                 result = self._execute_web_search(arguments)
             elif name == "transcript":
-                result = self._execute_transcript(arguments)
-            elif name == "extract_video_frames":
-                result = self._execute_extract_video_frames(cwd, arguments)
-            elif name == "extract_keyframes":
-                result = self._execute_extract_keyframes(cwd, arguments)
+                result = self._execute_transcript(arguments)            
             else:
                 result = ToolResult.fail(f"Unknown tool: {name}")
                 
@@ -562,63 +558,7 @@ Partial output before timeout:
         if explanation:
             lines.append(f"\nReason: {explanation}")
         
-        return ToolResult.ok("\n".join(lines))
-    
-    
-    def _execute_extract_video_frames(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Extract frames from a video file."""
-        video_path = args.get("video_path", "")
-        output_dir = args.get("output_dir", "")
-        
-        if not video_path:
-            return ToolResult.invalid(
-                "Missing required parameter 'video_path'. "
-                "Usage: extract_video_frames(video_path: str, output_dir: str, fps?: float, max_frames?: int, start_time?: float, end_time?: float, scale?: str, format?: str)"
-            )
-        if not output_dir:
-            return ToolResult.invalid(
-                "Missing required parameter 'output_dir'. "
-                "Usage: extract_video_frames(video_path: str, output_dir: str, fps?: float, max_frames?: int, start_time?: float, end_time?: float, scale?: str, format?: str)"
-            )
-        
-        from src.tools.extract_video import extract_video_frames
-        return extract_video_frames(
-            video_path=video_path,
-            output_dir=output_dir,
-            cwd=cwd,
-            fps=args.get("fps", 1.0),
-            max_frames=args.get("max_frames", 30),
-            start_time=args.get("start_time"),
-            end_time=args.get("end_time"),
-            scale=args.get("scale"),
-            format=args.get("format", "png"),
-        )
-    
-    def _execute_extract_keyframes(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Extract keyframes (scene changes) from a video file."""
-        video_path = args.get("video_path", "")
-        output_dir = args.get("output_dir", "")
-        
-        if not video_path:
-            return ToolResult.invalid(
-                "Missing required parameter 'video_path'. "
-                "Usage: extract_keyframes(video_path: str, output_dir: str, max_frames?: int, threshold?: float, format?: str)"
-            )
-        if not output_dir:
-            return ToolResult.invalid(
-                "Missing required parameter 'output_dir'. "
-                "Usage: extract_keyframes(video_path: str, output_dir: str, max_frames?: int, threshold?: float, format?: str)"
-            )
-        
-        from src.tools.extract_video import extract_keyframes
-        return extract_keyframes(
-            video_path=video_path,
-            output_dir=output_dir,
-            cwd=cwd,
-            max_frames=args.get("max_frames", 20),
-            threshold=args.get("threshold", 0.3),
-            format=args.get("format", "png"),
-        )    
+        return ToolResult.ok("\n".join(lines))    
     
     def _execute_transcript(self, args: dict[str, Any]) -> ToolResult:
         """Analyze video using Gemini 3 Pro Preview via OpenRouter with direct URL support."""

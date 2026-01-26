@@ -237,7 +237,7 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Performs a web search to find relevant web pages and documents to the input query using Firecrawl API.
+    "description": """Performs a web search to find relevant web pages and documents to the input query.
 
 Use this tool when the query requires finding specific factual information from the web:
 - Recent news, events, or developments
@@ -246,7 +246,6 @@ Use this tool when the query requires finding specific factual information from 
 - Specific published content, articles, or references
 - Current trends or technologies
 - API documents for a publicly available API
-- Public github repositories, and other public code resources
 
 DO NOT use for:
 - Creative generation (writing, poetry, etc.)

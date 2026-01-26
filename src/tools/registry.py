@@ -667,19 +667,32 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             return ToolResult.fail(f"Transcript failed: {e}")
     
     def _execute_web_search(self, args: dict[str, Any]) -> ToolResult:
-        """Search the web for information."""
+        """Search the web for information using Firecrawl SDK."""
         query = args.get("query", "")
         num_results = args.get("num_results", 5)
         search_type = args.get("search_type", "general")
+        scrape_content = args.get("scrape_content", False)
+        formats = args.get("formats")
+        sources = args.get("sources")
+        timeout = args.get("timeout", 60000)
         
         if not query:
             return ToolResult.invalid(
                 "Missing required parameter 'query'. "
-                "Usage: web_search(query: str, num_results?: int, search_type?: str)"
+                "Usage: web_search(query: str, num_results?: int, search_type?: str, "
+                "scrape_content?: bool, formats?: List[str], sources?: List[str], timeout?: int)"
             )
         
         from src.tools.web_search import web_search
-        return web_search(query, num_results, search_type)
+        return web_search(
+            query=query,
+            num_results=num_results,
+            search_type=search_type,
+            scrape_content=scrape_content,
+            formats=formats,
+            sources=sources,
+            timeout=timeout,
+        )
     
     # -------------------------------------------------------------------------
     # Caching methods

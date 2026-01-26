@@ -1,49 +1,46 @@
-"""Web search tool for SuperAgent - searches the web using Firecrawl and Serper APIs."""
+"""Web search tool for SuperAgent - searches the web using Firecrawl SDK."""
 
 from __future__ import annotations
 
 import os
 import time
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from src.tools.base import ToolResult
 
 # Firecrawl API key - set your key here or via environment variable
-
 PRIVATE_FIRECRAWL_API_KEY = "fc-43fbb4221a2f4443bf69526c60f1488a"
 os.environ["FIRECRAWL_API_KEY"] = PRIVATE_FIRECRAWL_API_KEY
 
-# Serper.dev API key - set your key here or via environment variable
-# Get your API key at https://serper.dev/
-PRIVATE_SERPER_API_KEY = "483edc920152e183905c3c5ef810de5466989681"
-os.environ["SERPER_API_KEY"] = PRIVATE_SERPER_API_KEY
-
-# Try to import httpx, fall back to requests
+# Try to import firecrawl-py SDK
 try:
-    import httpx
-    HAS_HTTPX = True
+    from firecrawl import Firecrawl
+    HAS_FIRECRAWL = True
 except ImportError:
-    HAS_HTTPX = False
-    try:
-        import requests
-        HAS_REQUESTS = True
-    except ImportError:
-        HAS_REQUESTS = False
+    HAS_FIRECRAWL = False
 
 
 def web_search(
     query: str,
     num_results: int = 5,
     search_type: str = "general",
-    provider: str = "firecrawl",
+    scrape_content: bool = False,
+    formats: Optional[List[str]] = None,
+    sources: Optional[List[str]] = None,
+    categories: Optional[List[Dict[str, str]]] = None,
+    timeout: int = 60000,
 ) -> ToolResult:
-    """Search the web for information using Firecrawl or Serper API.
+    """Search the web for information using Firecrawl SDK.
     
     Args:
         query: Search query string
         num_results: Number of results to return (default: 5, max: 10)
         search_type: Type of search - 'general', 'code', 'docs', 'news', or 'images'
-        provider: Search provider - 'auto', 'firecrawl', or 'serper'
+        scrape_content: Whether to scrape full content from search results (default: False)
+        formats: Output formats for scraped content - ['markdown', 'html', 'links', 'screenshots'] (default: ['markdown'])
+        sources: Where to search - ['web'] (default: ['web'])
+        categories: Filter by category - e.g., [{'type': 'github'}] for code search
+        timeout: Request timeout in milliseconds (default: 60000)
         
     Returns:
         ToolResult with search results or error
@@ -51,70 +48,56 @@ def web_search(
     if not query:
         return ToolResult.fail(
             "Missing required parameter 'query'. "
-            "Usage: web_search(query: str, num_results?: int, search_type?: str, provider?: str)"
+            "Usage: web_search(query: str, num_results?: int, search_type?: str, "
+            "scrape_content?: bool, formats?: List[str], sources?: List[str], "
+            "categories?: List[Dict], timeout?: int)"
+        )
+    
+    if not HAS_FIRECRAWL:
+        return ToolResult.fail(
+            "Firecrawl SDK not available. Install with: pip install firecrawl-py"
         )
     
     # Clamp num_results
     num_results = max(1, min(10, num_results))
     
-    # Try specified provider or auto-detect
-    if provider == "serper":
-        result = _search_with_serper(query, num_results, search_type)
-        if result is not None:
-            return result
-    elif provider == "firecrawl":
-        result = _search_with_firecrawl(query, num_results, search_type)
-        if result is not None:
-            return result
-        # If Firecrawl fails, fall back to Serper even if firecrawl was specified
-        result = _search_with_serper(query, num_results, search_type)
-        if result is not None:
-            return result
-    else:
-        # Auto mode: try Serper first (faster, more reliable), then Firecrawl
-        result = _search_with_serper(query, num_results, search_type)
-        if result is not None:
-            return result
-        
-        result = _search_with_firecrawl(query, num_results, search_type)
-        if result is not None:
-            return result
-    
-    return ToolResult.fail(
-        "Web search unavailable. No search API configured. "
-        "Set SERPER_API_KEY or FIRECRAWL_API_KEY environment variable."
-    )
-
-
-def _search_with_firecrawl(
-    query: str,
-    num_results: int,
-    search_type: str,
-) -> Optional[ToolResult]:
-    """Search using Firecrawl API.
-    
-    Firecrawl provides web search with optional content scraping.
-    API docs: https://docs.firecrawl.dev/features/search
-    """
+    # Get API key
     api_key = os.environ.get("FIRECRAWL_API_KEY")
     if not api_key:
-        return None
+        return ToolResult.fail(
+            "FIRECRAWL_API_KEY environment variable not set. "
+            "Set your Firecrawl API key to use web search."
+        )
     
-    url = "https://api.firecrawl.dev/v1/search"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    # Initialize Firecrawl client
+    try:
+        firecrawl = Firecrawl(api_key=api_key)
+    except Exception as e:
+        return ToolResult.fail(f"Failed to initialize Firecrawl client: {e}")
     
-    # Build payload
-    payload = {
-        "query": query,
-        "limit": num_results,
-    }
+    # Configure search parameters based on search_type
+    if formats is None:
+        formats = ["markdown"] if scrape_content else []
     
-    # Don't use scrapeOptions by default - it causes timeouts
-    # Only use basic search for faster, more reliable results
-    # If content scraping is needed, it can be done separately
+    if sources is None:
+        sources = ["web"]
+    
+    # Configure categories based on search_type
+    if categories is None:
+        if search_type == "code":
+            categories = [{"type": "github"}]
+        elif search_type == "docs":
+            # For docs, we can add documentation sites
+            categories = []
+        else:
+            categories = []
+    
+    # Build scrapeOptions if scraping content
+    scrape_options = None
+    if scrape_content:
+        scrape_options = {
+            "formats": formats,
+        }
     
     # Retry up to 3 times with increasing delays
     max_retries = 3
@@ -122,24 +105,25 @@ def _search_with_firecrawl(
     
     for attempt in range(1, max_retries + 1):
         try:
-            if HAS_HTTPX:
-                # Reduced timeout to 30 seconds for faster failure and fallback
-                with httpx.Client(timeout=30.0) as client:
-                    response = client.post(url, headers=headers, json=payload)
-                    response.raise_for_status()
-                    data = response.json()
-            elif HAS_REQUESTS:
-                import requests
-                # Reduced timeout to 30 seconds for faster failure and fallback
-                response = requests.post(url, headers=headers, json=payload, timeout=30)
-                response.raise_for_status()
-                data = response.json()
-            else:
-                # return ToolResult.fail("No HTTP client available. Install httpx or requests.")
-                return None
+            # Call Firecrawl search API
+            search_params = {
+                "query": query,
+                "limit": num_results,
+                "sources": sources,
+                "timeout": timeout,
+            }
+            
+            if categories:
+                search_params["categories"] = categories
+            
+            if scrape_options:
+                search_params["scrapeOptions"] = scrape_options
+            
+            # Execute search
+            result = firecrawl.search(**search_params)
             
             # Success - return formatted results
-            return _format_firecrawl_results(data, query, search_type)
+            return _format_firecrawl_results(result, query, search_type, scrape_content)
             
         except Exception as e:
             last_error = e
@@ -147,16 +131,13 @@ def _search_with_firecrawl(
             
             # Don't retry on certain errors (authentication, bad request, etc.)
             if "401" in error_msg or "403" in error_msg or "400" in error_msg:
-                # return ToolResult.fail(f"Firecrawl search failed: {e}")
-                return None
+                return ToolResult.fail(f"Firecrawl search failed: {e}")
             
             # If this is the last attempt, handle the error
             if attempt == max_retries:
-                # Return None to allow fallback to Serper on timeout
-                if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-                    return None  # Allow fallback to Serper
-                # return ToolResult.fail(f"Firecrawl search failed after {max_retries} attempts: {e}")
-                return None
+                return ToolResult.fail(
+                    f"Firecrawl search failed after {max_retries} attempts: {e}"
+                )
             
             # Wait before retrying with exponential backoff
             # Delay: 2s, 4s for attempts 1, 2
@@ -165,172 +146,66 @@ def _search_with_firecrawl(
     
     # Should not reach here, but handle it anyway
     if last_error:
-        error_msg = str(last_error)
-        if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-            return None  # Allow fallback to Serper
-        # return ToolResult.fail(f"Firecrawl search failed: {last_error}")
-        return None
+        return ToolResult.fail(f"Firecrawl search failed: {last_error}")
     
-    return None
+    return ToolResult.fail("Firecrawl search failed: Unknown error")
 
 
-def _format_firecrawl_results(data: dict, query: str, search_type: str = "general") -> ToolResult:
+def _format_firecrawl_results(
+    data: dict, 
+    query: str, 
+    search_type: str = "general",
+    scrape_content: bool = False
+) -> ToolResult:
     """Format Firecrawl API results."""
-    if not data.get("success", False):
+    if not data:
+        return ToolResult.fail("Empty response from Firecrawl")
+    
+    # Check for error in response
+    if isinstance(data, dict) and not data.get("success", True):
         error = data.get("error", "Unknown error")
         return ToolResult.fail(f"Firecrawl search failed: {error}")
     
     results = []
     
-    # v1 API returns flat list in 'data' array
-    for item in data.get("data", []):
+    # Extract results from response
+    # Firecrawl search returns data in 'data' array
+    items = data.get("data", [])
+    
+    if not items:
+        return ToolResult.ok(f"No results found for: {query}")
+    
+    for item in items:
         result = {
             "title": item.get("title", ""),
             "url": item.get("url", ""),
-            "snippet": item.get("description", ""),
+            "snippet": item.get("description", "") or item.get("snippet", ""),
         }
         
-        # If markdown content is available, use a truncated version as snippet
-        markdown = item.get("markdown", "")
-        if markdown and len(markdown) > len(result["snippet"]):
-            # Use first 500 chars of markdown as extended snippet
-            result["content"] = markdown[:1000] + ("..." if len(markdown) > 1000 else "")
+        # If scraped content is available, include it
+        if scrape_content:
+            markdown = item.get("markdown", "")
+            html = item.get("html", "")
+            links = item.get("links", [])
+            
+            if markdown:
+                # Use first 2000 chars of markdown as content preview
+                result["content"] = markdown[:2000] + ("..." if len(markdown) > 2000 else "")
+            elif html:
+                # Fallback to HTML if markdown not available
+                result["content"] = html[:2000] + ("..." if len(html) > 2000 else "")
+            
+            if links:
+                result["links"] = links[:10]  # Limit to first 10 links
+        
+        # Add metadata if available
+        if item.get("publishedTime"):
+            result["date"] = item.get("publishedTime")
+        
+        if item.get("author"):
+            result["author"] = item.get("author")
         
         results.append(result)
-    
-    if not results:
-        return ToolResult.ok(f"No results found for: {query}")
-    
-    return _format_results(results, query, search_type)
-
-
-def _search_with_serper(
-    query: str,
-    num_results: int,
-    search_type: str,
-) -> Optional[ToolResult]:
-    """Search using Serper.dev API (Google Search API).
-    
-    Serper provides fast Google search results via API.
-    API docs: https://serper.dev/docs
-    """
-    api_key = os.environ.get("SERPER_API_KEY")
-    if not api_key:
-        return None
-    
-    # Determine endpoint based on search type
-    endpoint_map = {
-        "general": "https://google.serper.dev/search",
-        "code": "https://google.serper.dev/search",
-        "docs": "https://google.serper.dev/search",
-        "news": "https://google.serper.dev/news",
-        "images": "https://google.serper.dev/images",
-    }
-    url = endpoint_map.get(search_type, "https://google.serper.dev/search")
-    
-    headers = {
-        "X-API-KEY": api_key,
-        "Content-Type": "application/json",
-    }
-    
-    # Build payload
-    payload = {
-        "q": query,
-        "num": num_results,
-    }
-    
-    # Add search type modifiers for code/docs
-    if search_type == "code":
-        payload["q"] = f"{query} site:github.com OR site:stackoverflow.com"
-    elif search_type == "docs":
-        payload["q"] = f"{query} documentation OR docs OR tutorial"
-    
-    try:
-        if HAS_HTTPX:
-            with httpx.Client(timeout=30) as client:
-                response = client.post(url, headers=headers, json=payload)
-                response.raise_for_status()
-                data = response.json()
-        elif HAS_REQUESTS:
-            import requests
-            response = requests.post(url, headers=headers, json=payload, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-        else:
-            return ToolResult.fail("No HTTP client available. Install httpx or requests.")
-        
-        return _format_serper_results(data, query, search_type)
-        
-    except Exception as e:
-        return ToolResult.fail(f"Serper search failed: {e}")
-
-
-def _format_serper_results(data: dict, query: str, search_type: str) -> ToolResult:
-    """Format Serper.dev API results."""
-    results = []
-    
-    # Handle different response formats based on search type
-    if search_type == "news":
-        items = data.get("news", [])
-    elif search_type == "images":
-        items = data.get("images", [])
-    else:
-        # Regular search includes organic results, knowledge graph, answer box, etc.
-        items = data.get("organic", [])
-        
-        # Include answer box if present (featured snippet)
-        answer_box = data.get("answerBox")
-        if answer_box:
-            answer_result = {
-                "title": answer_box.get("title", "Answer"),
-                "url": answer_box.get("link", ""),
-                "snippet": answer_box.get("snippet") or answer_box.get("answer", ""),
-            }
-            if answer_result["snippet"]:
-                results.append(answer_result)
-        
-        # Include knowledge graph if present
-        knowledge_graph = data.get("knowledgeGraph")
-        if knowledge_graph:
-            kg_description = knowledge_graph.get("description", "")
-            if kg_description:
-                kg_result = {
-                    "title": knowledge_graph.get("title", "Knowledge Graph"),
-                    "url": knowledge_graph.get("website", ""),
-                    "snippet": kg_description,
-                }
-                results.append(kg_result)
-    
-    # Process main items
-    for item in items:
-        if search_type == "images":
-            result = {
-                "title": item.get("title", ""),
-                "url": item.get("link", ""),
-                "snippet": f"Image: {item.get('imageUrl', '')}",
-            }
-        elif search_type == "news":
-            result = {
-                "title": item.get("title", ""),
-                "url": item.get("link", ""),
-                "snippet": item.get("snippet", ""),
-                "date": item.get("date", ""),
-                "source": item.get("source", ""),
-            }
-        else:
-            result = {
-                "title": item.get("title", ""),
-                "url": item.get("link", ""),
-                "snippet": item.get("snippet", ""),
-            }
-            # Include position for reference
-            if item.get("position"):
-                result["position"] = item.get("position")
-        
-        results.append(result)
-    
-    if not results:
-        return ToolResult.ok(f"No results found for: {query}")
     
     return _format_results(results, query, search_type)
 
@@ -346,22 +221,33 @@ def _format_results(results: list[dict], query: str, search_type: str = "general
         snippet = result.get("snippet", "No description")
         content = result.get("content", "")
         date = result.get("date", "")
-        source = result.get("source", "")
+        author = result.get("author", "")
+        links = result.get("links", [])
         
         lines.append(f"{i}. {title}")
         if url:
             lines.append(f"   URL: {url}")
-        if date or source:
-            meta_parts = []
-            if source:
-                meta_parts.append(f"Source: {source}")
-            if date:
-                meta_parts.append(f"Date: {date}")
+        
+        # Add metadata
+        meta_parts = []
+        if author:
+            meta_parts.append(f"Author: {author}")
+        if date:
+            meta_parts.append(f"Date: {date}")
+        if meta_parts:
             lines.append(f"   {' | '.join(meta_parts)}")
+        
         if snippet:
             lines.append(f"   {snippet}")
+        
         if content:
             lines.append(f"\n   Content preview:\n   {content}\n")
+        
+        if links:
+            lines.append(f"   Links: {', '.join(links[:5])}")
+            if len(links) > 5:
+                lines.append(f"   ... and {len(links) - 5} more links")
+        
         lines.append("")
     
     return ToolResult.ok("\n".join(lines))

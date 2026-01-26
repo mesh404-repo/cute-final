@@ -471,7 +471,7 @@ def run_agent_loop(
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"tool name: {tool_name}")
-            _log(f"tool args: {tool_args}")
+            # _log(f"tool args: {tool_args}")
             
             # Emit item.started
             item_id = next_item_id()
@@ -510,6 +510,8 @@ def run_agent_loop(
             
             # Truncate output using middle-out (keeps beginning and end)
             output = middle_out_truncate(raw_output or "no output", max_tokens=max_output_tokens)
+
+            _log(f"output: {output}")
 
             emit(ItemCompletedEvent(
                 item=make_command_execution_item(

@@ -270,6 +270,98 @@ DO NOT use for:
     },
 }
 
+FETCH_URL_SPEC: dict[str, Any] = {
+    "name": "fetch_url",
+    "description": """Fetches content from URLs with automatic content type detection:
+
+**WEBPAGES**: Returns content using Firecrawl API with configurable formats
+**IMAGES** (.png, .jpg, .gif, etc.): Downloads and returns as base64 for vision analysis
+**VIDEOS** (.mp4, .webm, etc.): Downloads to cache and provides frame extraction commands
+
+Available formats (default: markdown):
+- **markdown**: Clean markdown content (default)
+- **summary**: AI-generated summary of the page
+- **html**: Cleaned HTML content
+- **rawHtml**: Raw HTML with no modifications
+- **screenshot**: Screenshot of the page (returns base64 image)
+- **links**: Extract all links from the page
+- **json**: Structured JSON output
+- **images**: Extract all image URLs from the page
+- **branding**: Extract brand identity and design system
+
+For images: The image will be automatically attached to the conversation for you to analyze.
+For videos: Use the provided ffmpeg commands to extract specific frames, then use view_image to view them.
+
+URLs THAT WILL FAIL - DO NOT ATTEMPT:
+- http://localhost:* or http://127.0.0.1:*
+- Private networks: 10.*.*.*, 192.168.*.*, 172.16-31.*.*
+- Non-HTTP protocols: file:///, ssh://, ftp://""",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The URL to scrape content from",
+            },
+            "formats": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["markdown", "summary", "html", "rawHtml", "screenshot", "links", "json", "images", "branding"]
+                },
+                "default": ["markdown"],
+                "description": "Output formats to retrieve. Default: ['markdown']. Can specify multiple formats.",
+            },
+        },
+        "required": ["url"],
+        "additionalProperties": False,
+    },
+}
+
+TRANSCRIPT_SPEC: dict[str, Any] = {
+    "name": "Transcript",
+    "description": """Analyze video content using Gemini 3 Pro Preview AI model.
+
+This tool uploads the video to Gemini and asks it to analyze/transcribe based on your instruction.
+
+**CRITICAL: Be VERY PRECISE in your instruction!**
+The AI model needs clear, specific instructions about:
+- What exactly you want extracted (dialogue, text on screen, actions, commands, etc.)
+- The format you need (list, transcript, step-by-step, etc.)
+- Any specific details to focus on
+- The purpose/goal of the transcription
+
+**Good instruction examples:**
+- "Extract all text commands shown on screen in this video. Output as a list of commands, one per line."
+- "Transcribe all spoken dialogue in this video, with speaker labels if possible."
+- "List all the steps shown in this tutorial, in order."
+- "Extract the code snippets visible on screen in this programming tutorial."
+
+**Bad instruction examples:**
+- "Transcribe this" (too vague)
+- "What's in this video?" (not specific enough)
+
+Supports: YouTube, Twitter/X, TikTok, Vimeo, and direct video URLs.
+
+Returns the AI's analysis/transcription based on your instruction.""",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "url": {
+                "type": "string",
+                "description": "The video URL (YouTube, Twitter, TikTok, Vimeo, or direct video URL)",
+            },
+            "instruction": {
+                "type": "string",
+                "description": "REQUIRED: Precise instruction for what to extract/transcribe from the video. Be specific about format, content type, and purpose.",
+            },
+        },
+        "required": ["url", "instruction"],
+        "additionalProperties": False,
+    },
+}
+
 # Extract video frames tool
 EXTRACT_VIDEO_FRAMES_SPEC: dict[str, Any] = {
     "name": "extract_video_frames",
@@ -361,8 +453,8 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
-    "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
-    "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,
+    "fetch_url": FETCH_URL_SPEC,
+    "transcript": TRANSCRIPT_SPEC,
 }
 
 

@@ -73,19 +73,29 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - If you modified files, read them back to confirm changes are correct
 
 ### 4. Component & Functionality Testing
-1. Identify ALL components, modules, or functions mentioned in the task
-2. For EACH component, write and run a test command that actually CALLS/EXERCISES the functionality (not just imports)
-3. Run any custom tests you created to validate edge cases
-4. If ANY test fails, analyze the failure, fix your solution, and re-run the tests
-5. DO NOT give up if tests fail - iterate until all tests pass
+- Identify ALL components, modules, or functions mentioned in the task
+- For EACH component, write and run a test command that actually CALLS/EXERCISES the functionality (not just imports)
+- Run any custom tests you created to validate edge cases
+- If ANY test fails, analyze the failure, fix your solution, and re-run the tests
+- DO NOT give up if tests fail - iterate until all tests pass
 
+### 5. MULTI-APPROACH TESTING (CRITICAL FOR ROBUSTNESS)
+The visible test environment may differ from the actual evaluation environment:
+- **DO NOT rely on a single approach** - Always test multiple variants of your solution
+- **Test AT LEAST 3-5 different ways** to achieve the same goal
+- **Assume the REAL evaluation may be STRICTER** than what you can see and test against
+- **Create multiple solutions** and verify each one works independently
+- **Prefer universal/robust techniques** over clever tricks that only work in specific conditions
+- Try different approaches, formats, syntax variations, and edge cases
+- Test with different inputs, special characters, and boundary conditions
+- **If your solution works but seems "too easy"**, make it more robust - try harder approaches
 
-### 5. Edge Cases & Quality
+### 6. Edge Cases & Quality
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
 
-#### 5. Workspace Cleanup (GC)
+### 7. Workspace Cleanup (GC)
 Before completing, clean up any artifacts YOU created that are not part of the deliverable:
 - Remove compiled/cache files: `rm -rf __pycache__ *.pyc .pytest_cache` (if you created them)
 - Remove build outputs: `rm -rf dist build *.egg-info node_modules` (if you installed/built them)
@@ -93,12 +103,11 @@ Before completing, clean up any artifacts YOU created that are not part of the d
 - Keep ONLY files required by the task - remove intermediate or debug artifacts
 - NEVER remove pre-existing files - only clean up what you created during this task
 
-#### 6. Final Decision
+### 8. Final Decision
 After completing the above verification:
 - If EVERYTHING is verified and correct (including ALL critical constraints): Summarize what was done and confirm completion
 - If ANY constraint is violated or ANYTHING is missing or broken: Fix it now using the appropriate tools
 - If files are in wrong location: MOVE them to correct location
-- Remove any temporary or intermediate files created during development that are not explicitly required by the task
 
 ## CRITICAL REMINDERS:
 - You are running in HEADLESS mode - DO NOT ask questions to the user
@@ -107,7 +116,7 @@ After completing the above verification:
 - If you find issues during verification, FIX THEM before completing
 - Only complete if you have VERIFIED (not assumed) that everything works
 
-Proceed with verification now.
+Run your verification tests now. Only signal completion after ALL tests pass.
 </system-reminder>"""
 
 # Template for confirmation round after first verification

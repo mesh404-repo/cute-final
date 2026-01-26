@@ -55,8 +55,10 @@ Write out each critical constraint you found, then VERIFY EACH ONE explicitly be
 
 ### 0.5. Example format vs exact output (IMPORTANT)
 - If the task uses **"example output format"**, **"example format"**, **"e.g."**, **"for example"**, or similar when showing sample output: those values are **illustrative only**. They demonstrate structure (e.g. JSON shape, key/value types), not exact data to match.
-- **Verification in that case:** Check **format/structure only** (e.g. valid JSON, correct key shape, values are integers not strings, structure matches). Do **NOT** verify that specific keys or values match the example—different data will produce different values, and that is expected.
+- **CRITICAL - Example addresses/offsets/numeric values:** If an example shows addresses, offsets, or numeric values, **do NOT add base addresses, offsets, or transformations** to match. Use the actual addresses/values from YOUR input data. Example values come from different input—your actual values are correct.
+- **Verification in that case:** Check **format/structure only** (e.g. valid JSON, correct key shape, values are integers not strings, structure matches). Do **NOT** verify that specific keys, addresses, offsets, or values match the example—different data will produce different values, and that is expected.
 - **Exact value checking** applies only when the task explicitly requires matching specific values (e.g. "output must be exactly X"). When in doubt, prefer format checking over exact-value matching for example-style output.
+- **Never infer transformations** from example values—only use transformations EXPLICITLY stated in the task description.
 
 ### 1. Requirements Analysis
 - Re-read the ENTIRE original task above word by word
@@ -76,7 +78,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
-  - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values to match the example
+  - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values, addresses, offsets, or numeric values to match the example. Use YOUR actual data values, not example values.
   - **Target/composed output:** If the task specifies a desired output, target result, or reference (e.g. a sequence, file, or structure your solution must produce or match), run the full pipeline or tests and confirm the **composed result matches the target**. Don't assume correctness from partial or format-only checks—validate end-to-end.
 
 ### 4. Component & Functionality Testing

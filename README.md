@@ -83,7 +83,7 @@ AUTO_COMPACT_THRESHOLD = 0.85
 from src.llm.client import LiteLLMClient
 
 llm = LiteLLMClient(
-    model="openrouter/anthropic/claude-opus-4-5",
+    model="openrouter/anthropic/claude-opus-4.5",
     temperature=0.0,
     max_tokens=16384,
 )
@@ -129,7 +129,7 @@ See `src/config/defaults.py`:
 
 ```python
 CONFIG = {
-    "model": "openrouter/anthropic/claude-opus-4-5",
+    "model": "openrouter/anthropic/claude-opus-4.5",
     "max_tokens": 16384,
     "max_iterations": 200,
     "auto_compact_threshold": 0.85,

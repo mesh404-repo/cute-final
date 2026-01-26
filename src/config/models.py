@@ -100,7 +100,7 @@ class AgentConfig(BaseModel):
     
     # Model settings
     model: str = Field(
-        default="openrouter/anthropic/claude-opus-4-5",
+        default="openrouter/anthropic/claude-opus-4.5",
         description="Model to use"
     )
     provider: Provider = Field(

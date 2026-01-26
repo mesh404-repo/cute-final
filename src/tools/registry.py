@@ -192,8 +192,6 @@ class ToolRegistry:
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
                 result = self._execute_web_search(arguments)
-            elif name == "fetch_url":
-                result = self._execute_fetchurl(arguments)
             elif name == "transcript":
                 result = self._execute_transcript(arguments)
             elif name == "extract_video_frames":
@@ -620,124 +618,7 @@ Partial output before timeout:
             max_frames=args.get("max_frames", 20),
             threshold=args.get("threshold", 0.3),
             format=args.get("format", "png"),
-        )
-    
-    def _execute_fetchurl(self, args: dict[str, Any]) -> ToolResult:
-        """Fetch URL content using Firecrawl API. Auto-detects images and videos."""
-        import httpx
-        import base64
-        import os
-        import hashlib
-        
-        target_url = args.get("url", "")
-        
-        if not target_url:
-            return ToolResult.invalid(
-                "No URL provided"
-            )
-        
-        # Basic validation
-        if "localhost" in target_url or "127.0.0.1" in target_url:
-            return ToolResult.fail("Cannot fetch localhost URLs")
-        if "192.168." in target_url or "10." in target_url.split("/")[2] if "/" in target_url else False:
-            return ToolResult.fail("Cannot fetch private network URLs")
-        
-        # Check if URL is an image or video by extension
-        url_lower = target_url.lower().split("?")[0]  # Remove query params
-        image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg')
-        video_extensions = ('.mp4', '.webm', '.avi', '.mov', '.mkv', '.m4v')
-        
-        # Try to detect content type by fetching headers first
-        try:
-            with httpx.Client(timeout=30.0, follow_redirects=True) as client:
-                head_response = client.head(target_url)
-                content_type = head_response.headers.get("content-type", "").lower()
-        except:
-            content_type = ""
-        
-        is_image = url_lower.endswith(image_extensions) or "image/" in content_type
-        is_video = url_lower.endswith(video_extensions) or "video/" in content_type
-        
-        # Handle IMAGE: Download and return as base64
-        if is_image:
-            try:
-                with httpx.Client(timeout=60.0, follow_redirects=True) as client:
-                    response = client.get(target_url)
-                    response.raise_for_status()
-                    
-                    # Check size (max 5MB)
-                    if len(response.content) > 5 * 1024 * 1024:
-                        return ToolResult.fail(f"Image too large: {len(response.content)} bytes (max 5MB)")
-                    
-                    # Detect mime type
-                    detected_type = content_type.split(";")[0].strip() if content_type else "image/png"
-                    if not detected_type.startswith("image/"):
-                        detected_type = "image/png"
-                    
-                    # Encode to base64
-                    b64_data = base64.b64encode(response.content).decode("utf-8")
-                    
-                    # Save image to platform cache
-                    ext = detected_type.split("/")[-1] if "/" in detected_type else "png"
-                    cache_path = self._save_to_platform_cache(response.content, extension=ext, prefix="image")
-                    
-                    # Return with inject_content for vision
-                    result = ToolResult.ok(f"Image fetched from {target_url} ({len(response.content)} bytes)\n[Saved to: {cache_path}]")
-                    result.inject_content = {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{detected_type};base64,{b64_data}"
-                        }
-                    }
-                    return result
-                    
-            except Exception as e:
-                return ToolResult.fail(f"Failed to fetch image: {e}")
-        
-        # Handle VIDEO: Download to platform cache and provide frame extraction info
-        if is_video:
-            try:
-                # Generate filename from URL hash and save to platform cache
-                url_hash = hashlib.md5(target_url.encode()).hexdigest()[:12]
-                ext = url_lower.split(".")[-1] if "." in url_lower else "mp4"
-                
-                # Download video
-                with httpx.Client(timeout=120.0, follow_redirects=True) as client:
-                    response = client.get(target_url)
-                    response.raise_for_status()
-                    
-                    # Check size (max 100MB)
-                    if len(response.content) > 100 * 1024 * 1024:
-                        return ToolResult.fail(f"Video too large: {len(response.content)} bytes (max 100MB)")
-                    
-                    # Save to platform cache
-                    video_path = self._save_to_platform_cache(response.content, extension=ext, prefix="video")
-                
-                # Get video info using ffprobe if available
-                duration_info = ""
-                try:
-                    import subprocess
-                    result = subprocess.run(
-                        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
-                        capture_output=True, text=True, timeout=10
-                    )
-                    if result.returncode == 0:
-                        duration = float(result.stdout.strip())
-                        duration_info = f"\nDuration: {duration:.2f} seconds"
-                except:
-                    pass
-                
-                return ToolResult.ok(
-                    f"Video downloaded to: {video_path}\n"
-                    f"Size: {len(response.content)} bytes{duration_info}\n\n"
-                    f"To view frames, use Execute tool with ffmpeg:\n"
-                    f"  Extract frame at 5 seconds: ffmpeg -ss 5 -i {video_path} -vframes 1 -f image2pipe -vcodec png - | base64\n"
-                    f"  Or use ViewImage after extracting: ffmpeg -ss 5 -i {video_path} -vframes 1 /tmp/frame.png && ViewImage /tmp/frame.png\n\n"
-                    f"Suggested frames to check: 0s, 5s, 10s, middle, end"
-                )
-                
-            except Exception as e:
-                return ToolResult.fail(f"Failed to fetch video: {e}")
+        )    
     
     def _execute_transcript(self, args: dict[str, Any]) -> ToolResult:
         """Analyze video using Gemini 3 Pro Preview via OpenRouter with direct URL support."""

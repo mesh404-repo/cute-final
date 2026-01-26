@@ -262,55 +262,6 @@ Keep queries focused on documentation or general information (e.g. 'Python subpr
     },
 }
 
-FETCH_URL_SPEC: dict[str, Any] = {
-    "name": "fetch_url",
-    "description": """Fetches content from URLs with automatic content type detection:
-
-**WEBPAGES**: Returns content with configurable formats
-**IMAGES** (.png, .jpg, .gif, etc.): Downloads and returns as base64 for vision analysis
-**VIDEOS** (.mp4, .webm, etc.): Downloads to cache and provides frame extraction commands
-
-Available formats (default: markdown):
-- **markdown**: Clean markdown content (default)
-- **summary**: AI-generated summary of the page
-- **html**: Cleaned HTML content
-- **rawHtml**: Raw HTML with no modifications
-- **screenshot**: Screenshot of the page (returns base64 image)
-- **links**: Extract all links from the page
-- **json**: Structured JSON output
-- **images**: Extract all image URLs from the page
-- **branding**: Extract brand identity and design system
-
-For images: The image will be automatically attached to the conversation for you to analyze.
-For videos: Use the provided ffmpeg commands to extract specific frames, then use view_image to view them.
-
-URLs THAT WILL FAIL - DO NOT ATTEMPT:
-- http://localhost:* or http://127.0.0.1:*
-- Private networks: 10.*.*.*, 192.168.*.*, 172.16-31.*.*
-- Non-HTTP protocols: file:///, ssh://, ftp://""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "url": {
-                "type": "string",
-                "format": "uri",
-                "description": "The URL to scrape content from",
-            },
-            "formats": {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": ["markdown", "summary", "html", "rawHtml", "screenshot", "links", "json", "images", "branding"]
-                },
-                "default": ["markdown"],
-                "description": "Output formats to retrieve. Default: ['markdown']. Can specify multiple formats.",
-            },
-        },
-        "required": ["url"],
-        "additionalProperties": False,
-    },
-}
-
 TRANSCRIPT_SPEC: dict[str, Any] = {
     "name": "transcript",
     "description": """Analyze video content.
@@ -444,7 +395,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
-    "fetch_url": FETCH_URL_SPEC,
     "transcript": TRANSCRIPT_SPEC,
 }
 

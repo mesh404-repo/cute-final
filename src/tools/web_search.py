@@ -92,7 +92,7 @@ def web_search(
         else:
             categories = []
     
-    # Build scrapeOptions if scraping content
+    # Build scrape_options if scraping content
     scrape_options = None
     if scrape_content:
         scrape_options = {
@@ -106,6 +106,7 @@ def web_search(
     for attempt in range(1, max_retries + 1):
         try:
             # Call Firecrawl search API
+            # Note: The SDK uses snake_case for parameters
             search_params = {
                 "query": query,
                 "limit": num_results,
@@ -117,7 +118,7 @@ def web_search(
                 search_params["categories"] = categories
             
             if scrape_options:
-                search_params["scrapeOptions"] = scrape_options
+                search_params["scrape_options"] = scrape_options
             
             # Execute search
             result = firecrawl.search(**search_params)

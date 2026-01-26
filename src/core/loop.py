@@ -389,6 +389,8 @@ def run_agent_loop(
 
             _log(f"response_text: {response_text}")
 
+            break
+
             if total_cost >= cost_limit:
                 break
 

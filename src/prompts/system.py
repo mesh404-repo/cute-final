@@ -913,6 +913,9 @@ For casual greetings, acknowledgements, or other one-off conversational messages
 
 # Tool Guidelines
 
+## WebSearch
+Performs a web search to find relevant web pages and documents. Use for finding factual information from current web content.
+
 ## Multiple Tool Calling
 
 You can and should make multiple tool calls in a single turn when the tools have no dependencies on each other's outputs. This improves efficiency and reduces latency.

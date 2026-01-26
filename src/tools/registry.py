@@ -95,6 +95,8 @@ class ToolRegistry:
     Tools receive AgentContext for shell execution.
     Includes caching and execution statistics.
     """
+
+    PLATFORM_CACHE_DIR = Path.home() / ".superagent" / "files"
     
     def __init__(
         self,
@@ -112,6 +114,35 @@ class ToolRegistry:
         self._config = config or ExecutorConfig()
         self._cache: Dict[str, CachedResult] = {}
         self._stats = ExecutorStats()
+
+        self.PLATFORM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _save_to_platform_cache(self, content: str | bytes, extension: str = "txt", prefix: str = "response") -> Path:
+        """Save content to platform cache and return the file path.
+        
+        Args:
+            content: The content to save (str or bytes)
+            extension: File extension (txt, json, png, md, etc.)
+            prefix: Prefix for the filename
+            
+        Returns:
+            Path to the saved file
+        """
+        import uuid
+        
+        # Generate unique filename
+        unique_id = uuid.uuid4().hex[:12]
+        timestamp = int(time.time())
+        filename = f"{prefix}_{timestamp}_{unique_id}.{extension}"
+        filepath = self.PLATFORM_CACHE_DIR / filename
+        
+        # Write content
+        if isinstance(content, bytes):
+            filepath.write_bytes(content)
+        else:
+            filepath.write_text(content, encoding="utf-8")
+        
+        return filepath    
     
     def execute(
         self,

@@ -237,41 +237,38 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for documentation. Use this tool judiciously and only for reference information.
+    "description": """Performs a web search to find relevant web pages and documents to the input query using Firecrawl API.
 
-Use web_search ONLY for:
-- Official documentation, API references, or library specifications
-- Examples of how to use specific technologies, commands, or libraries
+Use this tool when the query requires finding specific factual information from the web:
+- Recent news, events, or developments
+- Up-to-date statistics, data points, or facts
+- Information about public entities (companies, organizations, people)
+- Specific published content, articles, or references
+- Current trends or technologies
+- API documents for a publicly available API
+- Public github repositories, and other public code resources
 
-DO NOT use web_search for:
-- **CRITICAL: If the task description mentions that you are not familiar with some content, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
-- **CRITICAL: If the task description mentions checking some site, do NOT use web search. Instead, use your reasoning and knowledge to resolve the task.**
-- Assignments involving complex mathematical reasoning, numerical computations, or algorithmic problems requiring precise mathematical derivation. These should be solved using direct computation, mathematical libraries, or algorithmic approaches.
-- As your primary tool for problem solving. This is a supplementary resource, not a replacement for analyzing the codebase, understanding requirements, and applying logical reasoning.
-- Finding complete solutions or answers to the task at hand. Use only for reference information, not for solving the actual problem.
-
-Usage constraints:
-- Do not call this tool more than 5 times per task. Use it sparingly and make each search count.
-- Be specific in queries: include library names, error messages, or specific concepts.""",
+DO NOT use for:
+- Creative generation (writing, poetry, etc.)
+- Mathematical calculations or problem-solving
+- Code generation or debugging unrelated to web resources
+- Finding code files in a local repository""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Search query for documentation or best practices (not for solving problems or mathematical calculations). Examples: 'python subprocess API documentation', 'bash error handling best practices'",
+                "description": "The search query string",
             },
             "num_results": {
                 "type": "integer",
-                "description": "Number of results to return (1-10, default 5)",
-                "default": 5,
-                "minimum": 1,
-                "maximum": 10,
+                "description": "Number of results to return (default: 10). Must be an integer. 1-100 allowed.",
             },
         },
         "required": ["query"],
+        "additionalProperties": False,
     },
 }
-
 
 # Extract video frames tool
 EXTRACT_VIDEO_FRAMES_SPEC: dict[str, Any] = {
@@ -363,7 +360,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "apply_patch": APPLY_PATCH_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
-    # "web_search": WEB_SEARCH_SPEC,
+    "web_search": WEB_SEARCH_SPEC,
     "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
     "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,
 }

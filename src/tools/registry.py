@@ -676,7 +676,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
                         ]
                     }
                 ],
-                "max_tokens": 16000
+                "max_tokens": 32000
             }
             
             headers = {

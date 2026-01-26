@@ -320,7 +320,7 @@ URLs THAT WILL FAIL - DO NOT ATTEMPT:
 }
 
 TRANSCRIPT_SPEC: dict[str, Any] = {
-    "name": "Transcript",
+    "name": "transcript",
     "description": """Analyze video content using Gemini 3 Pro Preview AI model.
 
 This tool uploads the video to Gemini and asks it to analyze/transcribe based on your instruction.

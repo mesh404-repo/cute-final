@@ -670,7 +670,6 @@ If completing the user's task requires writing or modifying files, your code and
 ## General
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
-- When searching for files mentioned in the task instruction, search first in the directory specified in the task. If those files do not exist there, search in other directories.
 
 ## Background Processes (CRITICAL)
 

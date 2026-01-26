@@ -770,21 +770,13 @@ The example was generated from different input data. Your output WILL have diffe
 
 **This reasoning pattern is ALWAYS wrong**, no matter how plausible the justification sounds. The test uses different input data than the example - any transformation you infer from example values will corrupt your actual output.
 
-**CRITICAL: Example addresses, offsets, and numeric values:**
-- If an example shows addresses, offsets, or numeric values that differ from your output, **do NOT add offsets, base addresses, or transformations** to match the example
-- Example addresses/offsets/values are from different input data - your actual addresses/offsets/values from your input are correct
-- **Never add base addresses, offsets, or transformations** unless the task description EXPLICITLY requires it (not inferred from examples)
-
 **What to do instead:**
-- **Treat examples as format-only** - use them to understand structure (JSON shape, key/value types, etc.), never to solve problems or infer logic
 - Implement the most literal interpretation of the task instructions
-- Use the actual addresses, offsets, and values from YOUR input data, not from examples
 - If your output has correct STRUCTURE (format, types, fields) but different VALUES - you're done
-- Only add transformations EXPLICITLY required by the task description (stated in words, not inferred from examples)
+- Only add transformations EXPLICITLY required by the task description
 - Self-comparison to examples proves nothing - only the actual test can verify correctness
-- **Never use example values to guide your solution approach** - solve the problem using the task description and your input data only
 
-**When values differ from example:** That's expected. Stop. Do not adjust. Move on. Do not add offsets, base addresses, or any transformations to match example values.
+**When values differ from example:** That's expected. Stop. Do not adjust. Move on.
 
 ## Workspace Cleanup (GC)
 

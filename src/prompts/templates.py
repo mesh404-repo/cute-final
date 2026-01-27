@@ -201,3 +201,17 @@ Please analyze and fix:
 5. If parameters are missing: review the tool's required parameters
 
 Next action: Fix the issue and retry with the correct tool call, or use an alternative approach."""
+
+# Template for initial planning phase (before execution)
+INITIAL_PLANNING_TEMPLATE = """Before executing any tools, create a brief plan for this task.
+
+**Task:** {instruction}
+
+**Create a plan with:**
+1. **Goal**: What is the expected outcome?
+2. **Steps**: List 3-7 key steps to accomplish this task
+3. **Risks**: What could go wrong? What files should be backed up first?
+4. **Success Criteria**: How will you verify the task is complete?
+
+Keep the plan concise (not more than 10-15 lines). Then proceed with execution."""
+

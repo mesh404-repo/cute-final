@@ -665,7 +665,7 @@ When approaching any task, follow these principles:
 **MANDATORY**: For tasks involving data files, databases, recovery operations, or any mention of corrupted/encrypted files:
 
 - **Backup FIRST, before ANY other operations**: This is your FIRST action, before reading, exploring, querying, or modifying files. Do not run any commands on data files until backups are created.
-- **Identify all related files**: For database tasks, identify and backup the main database file AND all related files. For other data formats, identify all components.
+- **Identify all related files**: For database tasks, identify and backup the main database file AND all related files (e.g., for SQLite: `.db`, `.db-wal`, `.db-shm` files). For other data formats, identify all components.
 - **Backup pattern**: Use commands like `cp /path/to/file /path/to/file.backup && cp /path/to/related-file /path/to/related-file.backup && echo "Backups created"` to create backups and verify success.
 - **Verify backups**: After creating backups, verify they exist and have non-zero size before proceeding with any other operations.
 - **Generalized rule**: If a task mentions data recovery, database operations, corrupted files, encrypted files, or data extraction - backup ALL related files as your very first step, before any exploration or investigation.
@@ -732,6 +732,7 @@ If completing the user's task requires writing or modifying files, your code and
 ## General
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
+- When searching for files mentioned in the task instruction, search first in the directory specified in the task. If those files do not exist there, search in other directories.
 
 ## Background Processes (CRITICAL)
 
@@ -1097,6 +1098,7 @@ Remember: Multiple tool calls are executed in parallel, so use them when tools a
 When using the shell, you must adhere to the following guidelines:
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
+- When searching for files mentioned in the task instruction, search first in the directory specified in the task. If those files do not exist there, search in other directories.
 - Do not use python scripts to attempt to output larger chunks of a file.
 
 ## Process Management

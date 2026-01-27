@@ -597,6 +597,7 @@ When approaching any task, follow these principles:
 - Extract core requirements: identify what must be accomplished, all constraints, and the expected outcome
 - Explore the codebase to verify assumptions - don't rely on assumptions without verification
 - Remember that solutions are validated by tests that may not be visible to you during development
+- **CRITICAL: If the task includes example output, example values, or sample results:** Treat them as format-only demonstrations. Read them once to understand structure/format, then ignore the values completely. Never reason about, analyze, or derive requirements from example values. Never compare your output to examples to solve problems. Your output will have different values (this is correct and expected).
 
 ### Data safety and backups (CRITICAL FIRST STEP)
 
@@ -707,7 +708,12 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 3. Wait to reap (CRITICAL!)
 4. Start fresh and save new PID
 
-**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing.
+**For singleton processes (VMs, databases, servers):**
+- Before starting: Kill ALL existing instances first (see Singleton Process Management)
+- After starting: Verify exactly one instance with `pgrep -c process_name`
+- Before completion: MANDATORY verification that count = 1
+
+**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing. For singleton processes, ensure only one instance exists before completing the task.
 
 ## Editing constraints
 
@@ -737,11 +743,17 @@ Since you are running in fully autonomous mode, proactively run tests, lint and 
 
 ### Target output and end-to-end validation
 
-When the task specifies a **desired output**, **target result**, or **reference** (e.g. a file, sequence, or structure your solution must produce or match):
+**IMPORTANT DISTINCTION:**
+- **Explicit targets/references** (task says "must match X" or "produce exactly Y"): These are requirements to match.
+- **Example outputs** (task shows "example output format" or "e.g."): These are format-only demonstrations - ignore the values.
+
+When the task specifies a **desired output**, **target result**, or **reference** (e.g. a file, sequence, or structure your solution must produce or match) as an explicit requirement (not an example):
 
 - **Treat the target as the source of truth.** Your deliverables must yield exactly that when used as intended. Use the target to validate your solution, not only local or format checks.
 - **Validate end-to-end.** If your solution produces intermediates that are combined or processed into a final result (e.g. fragments → composed output, components → product), run the full pipeline or equivalent check. Confirm that the **composed result matches the target**. Verifying each part in isolation is not enough—the combined result must match the specification.
 - **Order and connectivity matter.** When multiple parts combine into one output, the order and how they connect must match the task. Explicitly verify that the composed result equals the required target before considering the task complete.
+
+**If the task shows an "example" or "sample" output:** This is NOT a target to match. It's a format demonstration only. See the "Example Output: Format vs Values" section for guidance.
 
 ### Edge cases
 
@@ -769,42 +781,60 @@ Before marking a task as complete, you MUST validate:
 
 ## Example Output: Format vs Values (CRITICAL)
 
-When task descriptions include example output:
+When task descriptions include example output, example values, sample output, or any demonstration of expected results:
 
-**FUNDAMENTAL PRINCIPLE: Take the example output as output format only, and never rely on it to solve problems.**
+**FUNDAMENTAL PRINCIPLE: Examples are FORMAT-ONLY demonstrations. They show structure, not requirements.**
 
-**CRITICAL: Don't try to derive any insights from the example output. Consider it merely as an output format.**
+**ABSOLUTE RULE: Never reason about, analyze, or derive insights from example values. Never compare your output to examples to solve problems.**
 
-**HARD RULE: Never reverse-engineer requirements from example values.**
+**CRITICAL: Do NOT engage in any reasoning about example values, even if it seems technically justified.**
 
-You will naturally compare your output to examples. When you notice differences:
+**FORBIDDEN REASONING PATTERNS (NEVER DO THIS):**
+- "The example shows X, which suggests Y about the problem..."
+- "Let me re-examine the example to understand what transformation is needed..."
+- "The example values indicate I need to add a base address/offset/transformation..."
+- Any analysis, comparison, or technical reasoning about WHY example values are what they are
+- Any attempt to reverse-engineer requirements, transformations, or logic from example values
 
-**STOP. Different values are CORRECT, not a bug to fix.**
-
-The example was generated from different input data. Your output WILL have different values. This is expected and correct.
+**If you find yourself thinking about example values in ANY way beyond "this shows the format": STOP IMMEDIATELY. This is a reasoning trap.**
 
 **The reasoning trap you MUST avoid:**
 1. You see: "Example output has X, my output has Y"
-2. You think: "I need to transform my output to match"
-3. You construct a technical justification for why the transformation makes sense
+2. You think: "I need to understand why X is different from Y" or "X suggests I should transform Y"
+3. You construct a technical justification (e.g., "X is a typical base address, so I should add an offset")
+4. You modify your solution to match the example
 
-**This reasoning pattern is ALWAYS wrong**, no matter how plausible the justification sounds. The test uses different input data than the example - any transformation you infer from example values will corrupt your actual output.
+**This entire reasoning chain is ALWAYS wrong**, regardless of how technically sound it appears. The example uses different input data. Any transformation, offset, base address, or logic you infer from example values will corrupt your actual output.
 
-**CRITICAL: Example addresses, offsets, and numeric values:**
-- If an example shows addresses, offsets, or numeric values that differ from your output, **do NOT add offsets, base addresses, or transformations** to match the example
-- Example addresses/offsets/values are from different input data - your actual addresses/offsets/values from your input are correct
-- **Never add base addresses, offsets, or transformations** unless the task description EXPLICITLY requires it (not inferred from examples)
+**What examples ARE for:**
+- Understanding output structure (JSON shape, key names, data types, nesting)
+- Understanding output format (text vs binary, line breaks, delimiters)
+- Understanding what fields/keys should exist
+
+**What examples are NOT for:**
+- Understanding what values should be
+- Understanding what transformations to apply
+- Understanding what offsets, base addresses, or calculations to use
+- Understanding what logic or algorithms to implement
+- Solving the problem or guiding your approach
+
+**CRITICAL: All example values (addresses, offsets, numbers, strings, any data):**
+- Example values are from different input data - they are NOT your target
+- Your actual values from YOUR input data are correct
+- **Never add offsets, base addresses, transformations, or any modifications** to match example values
+- **Never reason about why example values are what they are** - this is irrelevant
+- Only apply transformations EXPLICITLY stated in the task description (in words, not inferred from examples)
 
 **What to do instead:**
-- **Treat examples as format-only** - use them to understand structure (JSON shape, key/value types, etc.), never to solve problems or infer logic
+- **Read examples once to understand format/structure, then ignore the values completely**
 - Implement the most literal interpretation of the task instructions
-- Use the actual addresses, offsets, and values from YOUR input data, not from examples
+- Use YOUR actual input data to produce YOUR actual output values
 - If your output has correct STRUCTURE (format, types, fields) but different VALUES - you're done
 - Only add transformations EXPLICITLY required by the task description (stated in words, not inferred from examples)
-- Self-comparison to examples proves nothing - only the actual test can verify correctness
-- **Never use example values to guide your solution approach** - solve the problem using the task description and your input data only
+- **Never compare your output to examples** - different input data means different values are expected
+- **Never use example values to guide your solution approach** - solve using the task description and your input data only
 
-**When values differ from example:** That's expected. Stop. Do not adjust. Move on. Do not add offsets, base addresses, or any transformations to match example values.
+**When you notice differences from examples:** This is expected and correct. Stop immediately. Do not analyze. Do not adjust. Do not add transformations. Move on. Your output with different values is correct.
 
 ## Workspace Cleanup (GC)
 
@@ -1067,15 +1097,51 @@ You have foundational knowledge for managing processes. This is essential for ro
 ### Singleton Process Management (CRITICAL)
 When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
 1. **Before starting**: Kill ALL existing instances first
-   - `pkill -9 process_name || true` (ignore error if none running)
+   - Check current count: `pgrep -c process_name` or `pgrep -c -f "pattern"`
+   - If count > 0, kill ALL instances: `pkill -9 process_name || true` (ignore error if none running)
+   - For processes with multiple binaries (e.g., QEMU): `pkill -9 -f "qemu-system" || true`
    - `sleep 1` to ensure cleanup
-   - Verify: `pgrep -c process_name` should return 0 or fail
+   - Verify cleanup: `pgrep -c process_name` should return `0` (or command should fail with exit code 1)
+   - **CRITICAL**: If `pgrep` still finds processes, they may be zombies - identify and handle them separately
 2. **After starting**: Verify exactly one instance
-   - `pgrep -c process_name` should return exactly `1`
-   - If count > 1, you have duplicate processes - kill all and restart fresh
-3. **Before task completion**: Final verification
-   - Confirm singleton: `pgrep -c process_name` equals `1`
-   - Tests often fail if they find multiple PIDs when expecting one
+   - Check count: `pgrep -c process_name` should return exactly `1`
+   - If count > 1, you have duplicate processes or zombies - kill ALL and restart fresh
+   - If count = 0, process failed to start - investigate and fix before continuing
+3. **Before task completion**: MANDATORY final verification
+   - **MUST verify singleton status**: `pgrep -c process_name` equals exactly `1`
+   - **CRITICAL**: Tests that use `pgrep process_name` expect a single PID. If multiple PIDs are returned (even if one is a zombie), the test will fail with "Failed to get QEMU command line" or similar errors
+   - If multiple processes exist, kill ALL and restart to ensure clean singleton state
+   - For QEMU specifically: `pgrep qemu-system` or `pgrep -f qemu-system` must return exactly one PID
+
+### QEMU and Virtual Machine Processes (CRITICAL)
+When working with QEMU, VirtualBox, or other VM processes:
+1. **Before starting QEMU**: ALWAYS check and kill existing instances
+   ```
+   # Check for existing QEMU processes
+   pgrep -c qemu-system
+   # If > 0, kill all:
+   pkill -9 -f qemu-system || true
+   sleep 1
+   # Verify cleanup: should return 0 or fail
+   pgrep -c qemu-system
+   ```
+2. **After starting QEMU**: Verify exactly one instance
+   ```
+   # Must return exactly 1
+   pgrep -c qemu-system
+   # If returns > 1, you have duplicates or zombies - kill all and restart
+   ```
+3. **Before task completion**: MANDATORY verification
+   - `pgrep qemu-system` (without -c) will return multiple PIDs if zombies exist
+   - Tests use `pgrep qemu-system` and expect a single PID string
+   - If multiple PIDs are returned, test fixtures fail with "Failed to get QEMU command line"
+   - **You MUST ensure**: `pgrep -c qemu-system` returns exactly `1` before completing
+4. **Common failure pattern**: 
+   - Agent starts QEMU multiple times (trial and error)
+   - Each failed attempt leaves a zombie process
+   - `pgrep qemu-system` returns "PID1\nPID2\nPID3" instead of single PID
+   - Test tries to read `/proc/PID1\nPID2\nPID3/cmdline` and fails
+   - **Solution**: Kill ALL QEMU processes before starting, verify singleton after start, verify again before completion
 
 ### Safe Process Killing (Avoid Self-Termination)
 CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
@@ -1099,10 +1165,17 @@ CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matc
 
 ### Pre-Completion Checklist
 Before calling done() or signaling task completion:
-1. Verify expected processes are running: `pgrep -c expected_process`
+1. **MANDATORY**: Verify expected processes are running with correct count
+   - For singleton processes (VMs, databases, servers): `pgrep -c process_name` must equal exactly `1`
+   - If count > 1, tests will fail because `pgrep` returns multiple PIDs (tests expect single PID)
+   - Example: `pgrep -c qemu-system` must return `1`, not `2` or more
 2. Verify NO duplicate/stale processes from failed attempts
+   - Check for zombie processes: `ps aux | awk '$8=="Z"' | grep process_name`
+   - If zombies exist, they will cause `pgrep` to return multiple PIDs
 3. Kill any processes you started that aren't needed for verification
-4. If task requires exactly N processes, confirm count matches
+4. If task requires exactly N processes, confirm count matches exactly
+   - Use `pgrep -c` to count, not `pgrep` (which lists all PIDs)
+   - For singleton processes, failure to verify count = 1 will cause test failures
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:

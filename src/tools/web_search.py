@@ -102,6 +102,8 @@ def web_search(
     # Retry up to 3 times with increasing delays
     max_retries = 3
     last_error = None
+
+    timeout = min(max(timeout, 1000), 300000)
     
     for attempt in range(1, max_retries + 1):
         try:
@@ -153,66 +155,219 @@ def web_search(
 
 
 def _format_firecrawl_results(
-    data: dict, 
+    data: Any, 
     query: str, 
     search_type: str = "general",
     scrape_content: bool = False
 ) -> ToolResult:
-    """Format Firecrawl API results."""
+    """Format Firecrawl API results.
+    
+    The SearchData object/response has:
+    - web: List[dict] - web search results with url, title, description, position
+    - news: List[dict] - news search results with title, url, snippet, date, position
+    - images: List[dict] - image search results with title, imageUrl, imageWidth, imageHeight, url, position
+    """
     if not data:
         return ToolResult.fail("Empty response from Firecrawl")
     
-    # Check for error in response
-    if isinstance(data, dict) and not data.get("success", True):
-        error = data.get("error", "Unknown error")
-        return ToolResult.fail(f"Firecrawl search failed: {error}")
+    # Extract items based on search type
+    items = []
+    result_type = search_type
     
-    results = []
-    
-    # Extract results from response
-    # Firecrawl search returns data in 'data' array
-    items = data.get("data", [])
+    # Handle SearchData object - it has web, news, images attributes
+    if hasattr(data, 'web') or hasattr(data, 'news') or hasattr(data, 'images'):
+        # It's a SearchData object - access attributes
+        if search_type == "news" and hasattr(data, 'news') and data.news:
+            items = data.news
+            result_type = "news"
+        elif search_type == "images" and hasattr(data, 'images') and data.images:
+            items = data.images
+            result_type = "images"
+        elif hasattr(data, 'web') and data.web:
+            # Default to web results
+            items = data.web
+            result_type = "web"
+        else:
+            # Try to get any available results
+            if hasattr(data, 'web') and data.web:
+                items = data.web
+                result_type = "web"
+            elif hasattr(data, 'news') and data.news:
+                items = data.news
+                result_type = "news"
+            elif hasattr(data, 'images') and data.images:
+                items = data.images
+                result_type = "images"
+    elif isinstance(data, dict):
+        # Check for error in response
+        if not data.get("success", True) if "success" in data else True:
+            error = data.get("error", "Unknown error")
+            return ToolResult.fail(f"Firecrawl search failed: {error}")
+        # Extract from dict format
+        if search_type == "news" and "news" in data and data["news"]:
+            items = data["news"]
+            result_type = "news"
+        elif search_type == "images" and "images" in data and data["images"]:
+            items = data["images"]
+            result_type = "images"
+        elif "web" in data and data["web"]:
+            items = data["web"]
+            result_type = "web"
+        else:
+            # Fallback: try any available
+            items = data.get("web", []) or data.get("news", []) or data.get("images", [])
+            if data.get("web"):
+                result_type = "web"
+            elif data.get("news"):
+                result_type = "news"
+            elif data.get("images"):
+                result_type = "images"
+    else:
+        # Try to access as attribute or convert to dict
+        try:
+            if hasattr(data, '__dict__'):
+                data_dict = data.__dict__
+            else:
+                # Try to get as dict directly
+                data_dict = dict(data) if hasattr(data, '__iter__') and not isinstance(data, str) else {}
+            
+            if search_type == "news" and "news" in data_dict and data_dict["news"]:
+                items = data_dict["news"]
+                result_type = "news"
+            elif search_type == "images" and "images" in data_dict and data_dict["images"]:
+                items = data_dict["images"]
+                result_type = "images"
+            elif "web" in data_dict and data_dict["web"]:
+                items = data_dict["web"]
+                result_type = "web"
+            else:
+                items = data_dict.get("web", []) or data_dict.get("news", []) or data_dict.get("images", [])
+        except Exception as e:
+            return ToolResult.fail(f"Unexpected response format from Firecrawl: {e}")
     
     if not items:
         return ToolResult.ok(f"No results found for: {query}")
     
+    results = []
+    
     for item in items:
-        result = {
-            "title": item.get("title", ""),
-            "url": item.get("url", ""),
-            "snippet": item.get("description", "") or item.get("snippet", ""),
-        }
+        # Handle both dict and object formats
+        if isinstance(item, dict):
+            # Dictionary format (most common)
+            if result_type == "images":
+                # Image results have: title, imageUrl, imageWidth, imageHeight, url, position
+                result = {
+                    "title": item.get("title", ""),
+                    "url": item.get("url", ""),
+                    "snippet": f"Image: {item.get('imageUrl', '')} ({item.get('imageWidth', 0)}x{item.get('imageHeight', 0)})",
+                    "imageUrl": item.get("imageUrl", ""),
+                    "imageWidth": item.get("imageWidth"),
+                    "imageHeight": item.get("imageHeight"),
+                    "position": item.get("position"),
+                }
+            elif result_type == "news":
+                # News results have: title, url, snippet, date, position
+                result = {
+                    "title": item.get("title", ""),
+                    "url": item.get("url", ""),
+                    "snippet": item.get("snippet", ""),
+                    "date": item.get("date", ""),
+                    "position": item.get("position"),
+                }
+            else:
+                # Web results have: url, title, description, position
+                result = {
+                    "title": item.get("title", ""),
+                    "url": item.get("url", ""),
+                    "snippet": item.get("description", ""),
+                    "position": item.get("position"),
+                    "category": item.get("category"),  # May be present for GitHub results
+                }
+        elif hasattr(item, 'url') or hasattr(item, '__dict__'):
+            # Object format - convert to dict
+            try:
+                if hasattr(item, '__dict__'):
+                    item_dict = item.__dict__
+                else:
+                    # Access attributes directly
+                    item_dict = {
+                        "title": getattr(item, "title", ""),
+                        "url": getattr(item, "url", ""),
+                        "description": getattr(item, "description", ""),
+                        "snippet": getattr(item, "snippet", ""),
+                        "position": getattr(item, "position", None),
+                        "category": getattr(item, "category", None),
+                        "date": getattr(item, "date", None),
+                        "imageUrl": getattr(item, "imageUrl", None),
+                    }
+                
+                if result_type == "images":
+                    result = {
+                        "title": item_dict.get("title", ""),
+                        "url": item_dict.get("url", ""),
+                        "snippet": f"Image: {item_dict.get('imageUrl', '')} ({item_dict.get('imageWidth', 0)}x{item_dict.get('imageHeight', 0)})",
+                        "imageUrl": item_dict.get("imageUrl", ""),
+                        "imageWidth": item_dict.get("imageWidth"),
+                        "imageHeight": item_dict.get("imageHeight"),
+                        "position": item_dict.get("position"),
+                    }
+                elif result_type == "news":
+                    result = {
+                        "title": item_dict.get("title", ""),
+                        "url": item_dict.get("url", ""),
+                        "snippet": item_dict.get("snippet", ""),
+                        "date": item_dict.get("date", ""),
+                        "position": item_dict.get("position"),
+                    }
+                else:
+                    result = {
+                        "title": item_dict.get("title", ""),
+                        "url": item_dict.get("url", ""),
+                        "snippet": item_dict.get("description", "") or item_dict.get("snippet", ""),
+                        "position": item_dict.get("position"),
+                        "category": item_dict.get("category"),
+                    }
+            except Exception:
+                continue  # Skip items we can't process
+        else:
+            continue  # Skip unknown formats
         
         # If scraped content is available, include it
         if scrape_content:
-            markdown = item.get("markdown", "")
-            html = item.get("html", "")
-            links = item.get("links", [])
+            markdown = None
+            html = None
+            links = None
+            
+            if isinstance(item, dict):
+                markdown = item.get("markdown")
+                html = item.get("html")
+                links = item.get("links")
+            else:
+                markdown = getattr(item, "markdown", None) if hasattr(item, "markdown") else None
+                html = getattr(item, "html", None) if hasattr(item, "html") else None
+                links = getattr(item, "links", None) if hasattr(item, "links") else None
             
             if markdown:
-                # Use first 2000 chars of markdown as content preview
                 result["content"] = markdown[:2000] + ("..." if len(markdown) > 2000 else "")
             elif html:
-                # Fallback to HTML if markdown not available
                 result["content"] = html[:2000] + ("..." if len(html) > 2000 else "")
             
-            if links:
-                result["links"] = links[:10]  # Limit to first 10 links
-        
-        # Add metadata if available
-        if item.get("publishedTime"):
-            result["date"] = item.get("publishedTime")
-        
-        if item.get("author"):
-            result["author"] = item.get("author")
+            if links and isinstance(links, list):
+                result["links"] = links[:10]
         
         results.append(result)
     
-    return _format_results(results, query, search_type)
+    return _format_results(results, query, result_type)
 
 
 def _format_results(results: list[dict], query: str, search_type: str = "general") -> ToolResult:
-    """Format search results for output."""
+    """Format search results for output.
+    
+    Handles different result types:
+    - web: url, title, description, position, category
+    - news: title, url, snippet, date, position
+    - images: title, imageUrl, imageWidth, imageHeight, url, position
+    """
     type_label = f" ({search_type})" if search_type != "general" else ""
     lines = [f"Search results{type_label} for: {query}\n"]
     
@@ -223,14 +378,33 @@ def _format_results(results: list[dict], query: str, search_type: str = "general
         content = result.get("content", "")
         date = result.get("date", "")
         author = result.get("author", "")
+        category = result.get("category")
+        position = result.get("position")
         links = result.get("links", [])
         
+        # Handle image results
+        imageUrl = result.get("imageUrl")
+        imageWidth = result.get("imageWidth")
+        imageHeight = result.get("imageHeight")
+        
         lines.append(f"{i}. {title}")
+        
         if url:
             lines.append(f"   URL: {url}")
         
+        # For images, show image URL and dimensions
+        if search_type == "images" and imageUrl:
+            image_info = f"Image: {imageUrl}"
+            if imageWidth and imageHeight:
+                image_info += f" ({imageWidth}x{imageHeight})"
+            lines.append(f"   {image_info}")
+        
         # Add metadata
         meta_parts = []
+        if position is not None:
+            meta_parts.append(f"Position: {position}")
+        if category:
+            meta_parts.append(f"Category: {category}")
         if author:
             meta_parts.append(f"Author: {author}")
         if date:

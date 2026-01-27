@@ -47,7 +47,6 @@ from src.prompts.templates import (
     VERIFICATION_CONFIRMATION_TEMPLATE,
     TOOL_FAILURE_GUIDANCE_TEMPLATE,
     TOOL_INVALID_GUIDANCE_TEMPLATE,
-    INITIAL_PLANNING_TEMPLATE,
 )
 from src.utils.truncate import middle_out_truncate, APPROX_BYTES_PER_TOKEN
 from src.core.compaction import (
@@ -220,15 +219,7 @@ def run_agent_loop(
     messages.append({
         "role": "user",
         "content": f"Current directory and files:\n```\n{initial_state}\n```",
-    })
-    
-    # 4b. Add initial planning prompt
-    planning_prompt = INITIAL_PLANNING_TEMPLATE.format(instruction=ctx.instruction)
-    messages.append({
-        "role": "user",
-        "content": planning_prompt,
-    })
-    _log("Added initial planning prompt")
+    })    
     
     # 5. Initialize tracking
     total_input_tokens = 0

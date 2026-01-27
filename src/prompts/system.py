@@ -987,7 +987,6 @@ You can and should make multiple tool calls in a single turn when the tools have
 
 6. **Documentation and code**:
    - `read_file` on README + `read_file` on main code file
-   - `web_search` for documentation + `read_file` on related code
 
 **Best practices:**
 - Group related independent operations together

@@ -285,7 +285,7 @@ def run_agent_loop(
                     extra_body = {}
                     reasoning_effort = config.get("reasoning_effort", "none")
                     if reasoning_effort and reasoning_effort != "none":
-                        extra_body["reasoning"] = {"effort": reasoning_effort}
+                        extra_body["model_reasoning_effort"] = reasoning_effort
                     
                     response = llm.chat(
                         cached_messages,

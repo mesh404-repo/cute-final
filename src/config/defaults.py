@@ -25,13 +25,13 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Model to use via OpenRouter (prefix with openrouter/ for litellm)
-    "model": "openrouter/anthropic/claude-opus-4.5",
+    "model": "openrouter/openai/gpt-5.2",
     
     # Provider
     "provider": "openrouter",
     
     # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
-    "reasoning_effort": "high",
+    "reasoning_effort": "low",
     
     # Token limits
     "max_tokens": 16384,

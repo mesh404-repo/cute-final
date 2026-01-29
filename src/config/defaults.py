@@ -44,7 +44,7 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Maximum iterations before stopping
-    "max_iterations": 350,
+    "max_iterations": 400,
     
     "cost_limit": 100.0,
     # Maximum tokens for tool output truncation (middle-out strategy)

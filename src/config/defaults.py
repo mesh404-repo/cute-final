@@ -31,7 +31,7 @@ CONFIG: Dict[str, Any] = {
     "provider": "openrouter",
     
     # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
-    "reasoning_effort": "high",
+    "reasoning_effort": "xhigh",
     
     # Token limits
     "max_tokens": 16384,

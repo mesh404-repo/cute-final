@@ -10,7 +10,7 @@ from src.tools.base import ToolResult
 
 # Firecrawl API key - set your key here or via environment variable
 
-PRIVATE_FIRECRAWL_API_KEY = "fc-2f7a8e6c61c940769d4e6aaa0819c49f"
+PRIVATE_FIRECRAWL_API_KEY = "fc-2d8c678d51274347b9b38637d59299af"
 os.environ["FIRECRAWL_API_KEY"] = PRIVATE_FIRECRAWL_API_KEY
 
 # Serper.dev API key - set your key here or via environment variable

@@ -1041,7 +1041,7 @@ When using the shell, you must adhere to the following guidelines:
 
 ## Process Management
 
-You have foundational knowledge for managing processes. This is essential for robust task execution:
+You have foundational knowledge for managing processes. This is essential for robust task execution and for **avoiding zombie processes**:
 
 ### Starting Processes
 - Use `&` to run processes in background: `command &`

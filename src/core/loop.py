@@ -511,6 +511,8 @@ def run_agent_loop(
             # Truncate output using middle-out (keeps beginning and end)
             output = middle_out_truncate(raw_output or "no output", max_tokens=max_output_tokens)
 
+            _log(f"output: {output}")
+
             emit(ItemCompletedEvent(
                 item=make_command_execution_item(
                     item_id=item_id,

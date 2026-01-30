@@ -672,15 +672,29 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
         query = args.get("query", "")
         num_results = args.get("num_results", 5)
         search_type = args.get("search_type", "general")
+        categories = args.get("categories")
+        scrape_content = args.get("scrape_content", False)
+        formats = args.get("formats")
+        sources = args.get("sources")
+        timeout = args.get("timeout", 60000)
         
         if not query:
             return ToolResult.invalid(
                 "Missing required parameter 'query'. "
-                "Usage: web_search(query: str, num_results?: int, search_type?: str)"
+                "Usage: web_search(query: str, num_results?: int, search_type?: str, categories?: List[str], ...)"
             )
         
         from src.tools.web_search import web_search
-        return web_search(query, num_results, search_type)
+        return web_search(
+            query,
+            num_results=num_results,
+            search_type=search_type,
+            scrape_content=scrape_content,
+            formats=formats,
+            sources=sources,
+            categories=categories,
+            timeout=timeout,
+        )
     
     # -------------------------------------------------------------------------
     # Caching methods

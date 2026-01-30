@@ -246,7 +246,14 @@ Use web search when:
 - You need to research how to accomplish a specific task
 - You're working with open source projects and need to understand patterns or best practices
 
-Be specific in queries: include library names, error messages, specific concepts, or task descriptions. Use search_type='code' for code examples, 'docs' for documentation, or 'general' for broad searches.""",
+Be specific in queries: include library names, error messages, specific concepts, or task descriptions. Use search_type='code' for code examples (searches GitHub), 'docs' for documentation, or 'general' for broad searches.
+
+Filter search results by specific categories using the categories parameter:
+- github: Search within GitHub repositories, code, issues, and documentation
+- research: Search academic and research websites (arXiv, Nature, IEEE, PubMed, etc.)
+- pdf: Search for PDFs
+
+When scrape_content=true, the tool will fetch full page content in markdown format, which is useful for detailed documentation or tutorials.""",
     "parameters": {
         "type": "object",
         "properties": {
@@ -261,7 +268,38 @@ Be specific in queries: include library names, error messages, specific concepts
             "search_type": {
                 "type": "string",
                 "enum": ["general", "code", "docs", "news", "images"],
-                "description": "Type of search: 'general' for broad searches, 'code' for code examples/GitHub/Stack Overflow, 'docs' for documentation/tutorials, 'news' for recent news, 'images' for image search",
+                "description": "Type of search: 'general' for broad searches, 'code' for code examples/GitHub (automatically filters to GitHub), 'docs' for documentation/tutorials, 'news' for recent news, 'images' for image search",
+            },
+            "categories": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["github", "research", "pdf"],
+                },
+                "description": "Filter search results by category (optional). github: GitHub repos, code, issues, docs; research: academic sites (arXiv, Nature, IEEE, PubMed, etc.); pdf: PDF files. Can combine multiple (e.g. ['github', 'research']).",
+            },
+            "scrape_content": {
+                "type": "boolean",
+                "description": "Whether to scrape full content from search results (default: false). When true, fetches markdown content from result pages. Useful for detailed documentation or tutorials, but slower.",
+            },
+            "formats": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["markdown", "html", "links", "screenshots"],
+                },
+                "description": "Output formats for scraped content when scrape_content=true (default: ['markdown']). Options: 'markdown' for clean text, 'html' for raw HTML, 'links' for extracted links, 'screenshots' for page screenshots.",
+            },
+            "sources": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                },
+                "description": "Where to search (default: ['web']). Currently supports 'web' for general web search.",
+            },
+            "timeout": {
+                "type": "number",
+                "description": "Request timeout in milliseconds (default: 60000, max: 300000). Increase for slower connections or when scraping content.",
             },
         },
         "required": ["query"],

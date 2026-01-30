@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-os.environ["OPENROUTER_API_KEY"] = "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"
+os.environ["OPENROUTER_API_KEY"] = ""
 
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""

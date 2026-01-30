@@ -537,8 +537,6 @@ class Presets:
 # Legacy constant for backward compatibility
 SYSTEM_PROMPT = """You are a coding agent running in a terminal-based environment. You are expected to be precise, safe, and helpful.
 
-You are expected to be precise, safe, and helpful.
-
 Your capabilities:
 - Receive user prompts and other context provided by the harness, such as files in the workspace.
 - Emit function calls to run terminal commands and apply patches.
@@ -1041,7 +1039,7 @@ When using the shell, you must adhere to the following guidelines:
 
 ## Process Management
 
-You have foundational knowledge for managing processes. This is essential for robust task execution and for **avoiding zombie processes**:
+You have foundational knowledge for managing processes. This is essential for robust task execution:
 
 ### Starting Processes
 - Use `&` to run processes in background: `command &`

@@ -237,22 +237,22 @@ Each step should be 5-7 words maximum.""",
 # Web search tool
 WEB_SEARCH_SPEC: dict[str, Any] = {
     "name": "web_search",
-    "description": """Search the web for information, documentation, code examples, and solutions. Use this tool proactively when stuck or uncertain.
+    "description": """Search the web for information, documentation, code examples, and solutions to help solve tasks.
 
-MANDATORY: Use web_search when:
-- You're stuck after 2-3 failed attempts
+Use web search when:
 - You encounter unfamiliar technologies, libraries, frameworks, or APIs
-- You encounter errors or behaviors you don't understand
+- You're stuck on a problem and need to find solutions or examples
 - You need documentation, tutorials, or code examples
-- You're uncertain how to accomplish a task
+- You need to research how to accomplish a specific task
+- You're working with open source projects and need to understand patterns or best practices
 
-Query tips: Be specific - include technology names, error messages, or task descriptions. Use search_type='code' for code examples, 'docs' for documentation, 'general' for broad searches.""",
+Be specific in queries: include library names, error messages, specific concepts, or task descriptions. Use search_type='code' for code examples, 'docs' for documentation, or 'general' for broad searches.""",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Specific search query with relevant keywords, library names, error messages, or task descriptions",
+                "description": "The search query - be specific and include relevant keywords, library names, or task descriptions",
             },
             "num_results": {
                 "type": "number",
@@ -260,8 +260,8 @@ Query tips: Be specific - include technology names, error messages, or task desc
             },
             "search_type": {
                 "type": "string",
-                "enum": ["general", "code", "docs"],
-                "description": "Search type: 'general' for broad searches, 'code' for code examples/GitHub/Stack Overflow, 'docs' for documentation/tutorials",
+                "enum": ["general", "code", "docs", "news", "images"],
+                "description": "Type of search: 'general' for broad searches, 'code' for code examples/GitHub/Stack Overflow, 'docs' for documentation/tutorials, 'news' for recent news, 'images' for image search",
             },
         },
         "required": ["query"],

@@ -26,9 +26,10 @@ if TYPE_CHECKING:
 APPROX_CHARS_PER_TOKEN = 4
 
 # Context limits
-MODEL_CONTEXT_LIMIT = 30_000  # Claude Opus 4.5 context window
+MODEL_CONTEXT_LIMIT = 32_000  # Claude Opus 4.5 context window
 OUTPUT_TOKEN_MAX = 2_000  # Max output tokens to reserve
 AUTO_COMPACT_THRESHOLD = 0.85  # Trigger compaction at 85% of usable context
+SUMMARY_TOKEN_ESTIMATE = 4096
 
 # Pruning constants (from OpenCode)
 PRUNE_PROTECT = 40_000  # Protect this many tokens of recent tool output
@@ -375,70 +376,65 @@ PROTECTED_MESSAGE_COUNT = 2
 def _find_messages_to_compact(
     messages: List[Dict[str, Any]],
     target_tokens: int,
-) -> tuple[int, int]:
+) -> List[int]:
     """
-    Find the range of messages that need to be compacted.
-    
-    The first PROTECTED_MESSAGE_COUNT messages (including system prompt) are always kept.
-    Calculates how many messages starting from index PROTECTED_MESSAGE_COUNT need to be 
-    summarized to bring the total under target_tokens.
-    
+    Find message indices to compact so the kept part fits in max_kept_tokens.
+
+    The boundary is aligned to assistant messages: the first kept message is
+    always an assistant (then its tool calls, then user, etc.). We summarize
+    from the start of the compactable section until we reach an assistant
+    such that tokens(protected + summary + messages[that_assistant:]) <= target.
+
+    - List all assistant message indices (global) in the compactable section.
+    - We must keep at least 2 assistant messages; so "keep" can start at
+      assistant index 0, 1, ..., n-2.
+    - Pick the smallest start index (compact as little as possible) such that
+      tokens(messages[start:]) <= max_kept_tokens.
+    - Return indices [PROTECTED_MESSAGE_COUNT, start) to compact.
+
     Args:
         messages: Current message history
         target_tokens: Target token count to get under
-        
+
     Returns:
-        Tuple of (start_index, count) - start index and number of messages to compact
+        List of message indices (0-based) to compact. Empty if no compaction needed.
     """
-    # Split messages into protected (first 3) and compactable (rest)
     protected_messages = messages[:PROTECTED_MESSAGE_COUNT]
-    compactable_messages = messages[PROTECTED_MESSAGE_COUNT:]
-    
-    # Calculate tokens for each section
+    compactable = messages[PROTECTED_MESSAGE_COUNT:]
+
     protected_tokens = estimate_total_tokens(protected_messages)
-    compactable_tokens = estimate_total_tokens(compactable_messages)
+    compactable_tokens = estimate_total_tokens(compactable)
     total_tokens = protected_tokens + compactable_tokens
-    
-    # Check if we need compaction at all
+
     if total_tokens <= target_tokens:
-        return (0, 0)
-    
-    # Not enough messages to compact (need at least 2 recent to keep)
-    if len(compactable_messages) <= 2:
-        return (0, 0)
-    
-    # Calculate available space for kept messages after compaction
-    # Final context = protected_tokens + summary_tokens + kept_tokens
-    # We want: protected_tokens + summary_tokens + kept_tokens <= target_tokens
-    SUMMARY_TOKEN_ESTIMATE = 2000
+        return []
+
     max_kept_tokens = target_tokens - protected_tokens - SUMMARY_TOKEN_ESTIMATE
-    
-    if max_kept_tokens <= 0:
-        # Can't fit even with full compaction, compact everything except last 2
-        return (PROTECTED_MESSAGE_COUNT, len(compactable_messages) - 2)
-    
-    # Calculate how many tokens we need to remove from compactable section
-    tokens_to_remove = compactable_tokens - max_kept_tokens
-    
-    if tokens_to_remove <= 0:
-        return (0, 0)
-    
-    # Accumulate tokens from compactable messages until we have enough to remove
-    accumulated = 0
-    messages_to_compact = 0
-    
-    for msg in compactable_messages:
-        accumulated += estimate_message_tokens(msg)
-        messages_to_compact += 1
-        
-        if accumulated >= tokens_to_remove:
-            break
-    
-    # Don't compact ALL messages - leave at least the last 2
-    max_to_compact = len(compactable_messages) - 2
-    messages_to_compact = min(messages_to_compact, max(0, max_to_compact))
-    
-    return (PROTECTED_MESSAGE_COUNT, messages_to_compact)
+
+    # Assistant message indices (global) in compactable section
+    assistant_indices: List[int] = []
+    for i in range(len(compactable)):
+        if compactable[i].get("role") == "assistant":
+            assistant_indices.append(PROTECTED_MESSAGE_COUNT + i)
+
+    # Need at least 2 assistants in the kept part
+    if len(assistant_indices) < 2:
+        return []
+
+    # Try starting "keep" at each assistant (from earliest), so that we compact
+    # as little as possible while kept tokens <= max_kept_tokens
+    for k in range(len(assistant_indices) - 1):
+        start = assistant_indices[k]
+        keep_messages = messages[start:]
+        keep_tokens = estimate_total_tokens(keep_messages)
+        if keep_tokens <= max_kept_tokens:
+            # Compact everything from PROTECTED_MESSAGE_COUNT up to (not including) start
+            return list(range(PROTECTED_MESSAGE_COUNT, start))
+
+    # Even keeping from the last allowed assistant is still over max_kept_tokens;
+    # compact up to that assistant so keep = from that assistant onward
+    last_valid_start = assistant_indices[len(assistant_indices) - 2]
+    return list(range(PROTECTED_MESSAGE_COUNT, last_valid_start))
 
 
 def _remove_orphaned_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -470,6 +466,8 @@ def _remove_orphaned_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[
             tool_call_id = msg.get("tool_call_id")
             if tool_call_id and tool_call_id not in valid_tool_call_ids:
                 # Convert orphaned tool message to user message with context
+                _log(f"Converting orphaned tool message to user message: {msg}")
+                
                 content = msg.get("content", "")
                 if content and content != PRUNE_MARKER:
                     # Convert to user message to preserve context
@@ -521,24 +519,28 @@ def run_compaction(
         usable = get_usable_context()
         target_tokens = int(usable * 0.65)
 
-    # Find which messages to compact
-    compact_start, num_to_compact = _find_messages_to_compact(messages, target_tokens)
+    # Find which message indices to compact (by assistant-message blocks)
+    compact_ids = _find_messages_to_compact(messages, target_tokens)
 
-    if num_to_compact == 0:
+    if not compact_ids:
         _log("No messages need compaction")
         return messages
 
-    # Split messages into three parts
+    compacted_set = set(compact_ids)
     protected_messages = messages[:PROTECTED_MESSAGE_COUNT]
-    messages_to_compact = messages[compact_start : compact_start + num_to_compact]
-    messages_to_keep = messages[compact_start + num_to_compact:]
+    messages_to_compact = [messages[i] for i in compact_ids]
+    messages_to_keep = [
+        messages[i]
+        for i in range(PROTECTED_MESSAGE_COUNT, len(messages))
+        if i not in compacted_set
+    ]
 
     protected_tokens = estimate_total_tokens(protected_messages)
     compact_tokens = estimate_total_tokens(messages_to_compact)
     keep_tokens = estimate_total_tokens(messages_to_keep)
 
     _log(f"Protected: {len(protected_messages)} messages ({protected_tokens} tokens)")
-    _log(f"Compacting: {num_to_compact} messages ({compact_tokens} tokens)")
+    _log(f"Compacting: {len(messages_to_compact)} messages ({compact_tokens} tokens)")
     _log(f"Keeping: {len(messages_to_keep)} messages ({keep_tokens} tokens)")
 
     # Build compaction request: removed messages + compaction prompt

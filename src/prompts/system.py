@@ -1130,6 +1130,35 @@ This applies universally to: VMs, databases, web servers, game servers, any back
 - Don't start a new instance without killing previous failed attempts first
 - Always verify process actually stopped: `ps -p PID` should fail after kill
 
+## Input/Output Analysis and Transformation Tasks
+
+When working with tasks that involve transforming inputs into outputs with specific structure or format:
+
+### Systematic Input/Output Comparison
+- **Compare inputs and outputs systematically**: Identify where elements are inserted, removed, modified, or reordered by analyzing the structure and relationships between input and output
+- **Track boundaries and positions carefully**: When elements are modified or transformed, verify the exact positions, lengths, and relationships in both source and target
+- **Understand data structure variations**: Different representations (e.g., circular vs linear, nested vs flat) may require specific handling; track transformations correctly
+
+### Overlap and Boundary Analysis
+- **Identify overlap relationships**: When designing transformations, determine which parts of the output come from the input vs need to be added or generated. This affects how you structure the transformation logic
+- **Handle partial overlaps correctly**: 
+  - If an element is fully contained in the input, include it in the transformation
+  - If an element is partially in the input, only generate the missing portion
+  - If an element is not in the input, generate it entirely
+- **Respect structural requirements**: When specifications describe elements as "without X" or "excluding Y", verify whether your transformation should include or exclude these based on the requirements
+
+### End-to-End Verification
+- **Simulate the transformation process**: After designing your solution, verify that the intermediate and final outputs are correct by:
+  - Checking that all connections and relationships between parts are correct
+  - Verifying that the final output matches the target specification exactly
+  - Confirming that all boundaries, lengths, and constraints are satisfied
+- **Validate constraints systematically**: Check all specified constraints (ranges, relationships, differences, formats) for every component before finalizing
+
+### General Approach
+- **Analyze before implementing**: Always thoroughly analyze the input/output structure to understand the transformation requirements before writing code
+- **Verify incrementally**: Check each step of your implementation (structure identification, transformation logic, constraint satisfaction) before proceeding
+- **Test assumptions**: When uncertain about boundaries, overlaps, or relationships, write verification scripts or tests to validate your understanding
+
 ## Handling Rate Limits and Bot Detection
 
 If you encounter rate limiting (429 errors), bot detection, or access blocks, try alternative approaches:

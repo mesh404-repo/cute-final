@@ -321,6 +321,9 @@ def run_agent_loop(
                     # Don't retry authentication errors
                     if e.code in ("authentication_error", "invalid_api_key"):
                         raise
+
+                    if "Prompt is too long" in e.message:
+                        raise                
                     
                     if "BadRequestError" in error_msg:
                         _log("BadRequestError")

@@ -364,76 +364,226 @@ def prune_old_images(
     _log(f"Image pruning complete: removed images from {len(indices_to_prune)} messages")
     return result
 
-
 # =============================================================================
 # AI Compaction
 # =============================================================================
+
+# First N messages to always keep intact (including system prompt)
+PROTECTED_MESSAGE_COUNT = 2
+
+
+def _find_messages_to_compact(
+    messages: List[Dict[str, Any]],
+    target_tokens: int,
+) -> tuple[int, int]:
+    """
+    Find the range of messages that need to be compacted.
+    
+    The first PROTECTED_MESSAGE_COUNT messages (including system prompt) are always kept.
+    Calculates how many messages starting from index PROTECTED_MESSAGE_COUNT need to be 
+    summarized to bring the total under target_tokens.
+    
+    Args:
+        messages: Current message history
+        target_tokens: Target token count to get under
+        
+    Returns:
+        Tuple of (start_index, count) - start index and number of messages to compact
+    """
+    # Split messages into protected (first 3) and compactable (rest)
+    protected_messages = messages[:PROTECTED_MESSAGE_COUNT]
+    compactable_messages = messages[PROTECTED_MESSAGE_COUNT:]
+    
+    # Calculate tokens for each section
+    protected_tokens = estimate_total_tokens(protected_messages)
+    compactable_tokens = estimate_total_tokens(compactable_messages)
+    total_tokens = protected_tokens + compactable_tokens
+    
+    # Check if we need compaction at all
+    if total_tokens <= target_tokens:
+        return (0, 0)
+    
+    # Not enough messages to compact (need at least 2 recent to keep)
+    if len(compactable_messages) <= 2:
+        return (0, 0)
+    
+    # Calculate available space for kept messages after compaction
+    # Final context = protected_tokens + summary_tokens + kept_tokens
+    # We want: protected_tokens + summary_tokens + kept_tokens <= target_tokens
+    SUMMARY_TOKEN_ESTIMATE = 2000
+    max_kept_tokens = target_tokens - protected_tokens - SUMMARY_TOKEN_ESTIMATE
+    
+    if max_kept_tokens <= 0:
+        # Can't fit even with full compaction, compact everything except last 2
+        return (PROTECTED_MESSAGE_COUNT, len(compactable_messages) - 2)
+    
+    # Calculate how many tokens we need to remove from compactable section
+    tokens_to_remove = compactable_tokens - max_kept_tokens
+    
+    if tokens_to_remove <= 0:
+        return (0, 0)
+    
+    # Accumulate tokens from compactable messages until we have enough to remove
+    accumulated = 0
+    messages_to_compact = 0
+    
+    for msg in compactable_messages:
+        accumulated += estimate_message_tokens(msg)
+        messages_to_compact += 1
+        
+        if accumulated >= tokens_to_remove:
+            break
+    
+    # Don't compact ALL messages - leave at least the last 2
+    max_to_compact = len(compactable_messages) - 2
+    messages_to_compact = min(messages_to_compact, max(0, max_to_compact))
+    
+    return (PROTECTED_MESSAGE_COUNT, messages_to_compact)
+
+
+def _remove_orphaned_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Remove or convert orphaned tool messages.
+    
+    Tool messages with tool_call_id require a preceding assistant message 
+    with matching tool_calls. If the assistant message is removed during 
+    compaction, the tool messages become "orphaned" and cause API errors.
+    
+    This function:
+    1. Collects all tool_call_ids from assistant messages
+    2. Removes tool messages that reference non-existent tool_call_ids
+    """
+    # Collect all valid tool_call_ids from assistant messages
+    valid_tool_call_ids = set()
+    for msg in messages:
+        if msg.get("role") == "assistant":
+            tool_calls = msg.get("tool_calls", [])
+            for tc in tool_calls:
+                tc_id = tc.get("id")
+                if tc_id:
+                    valid_tool_call_ids.add(tc_id)
+    
+    # Filter out orphaned tool messages
+    result = []
+    for msg in messages:
+        if msg.get("role") == "tool":
+            tool_call_id = msg.get("tool_call_id")
+            if tool_call_id and tool_call_id not in valid_tool_call_ids:
+                # Convert orphaned tool message to user message with context
+                content = msg.get("content", "")
+                if content and content != PRUNE_MARKER:
+                    # Convert to user message to preserve context
+                    result.append({
+                        "role": "user",
+                        "content": f"[Previous tool output]\n{content}",
+                    })
+                # Skip orphaned tool messages with no useful content
+                continue
+        result.append(msg)
+    
+    return result
+
 
 def run_compaction(
     llm: "LiteLLMClient",
     messages: List[Dict[str, Any]],
     system_prompt: str,
     model: Optional[str] = None,
+    target_tokens: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
     Compact conversation history using AI summarization.
-    
+
     Process (like Codex):
-    1. Send all messages + compaction prompt to LLM
-    2. Get summary response
-    3. Create new message list:
-       - Original system prompt
-       - Summary as user message (with prefix)
-       - Ready for continuation
-    
+    1. Keep first PROTECTED_MESSAGE_COUNT messages intact (including system prompt)
+    2. Find which middle messages to remove to fit under target_tokens
+    3. Send those removed messages + compaction prompt to LLM for summary
+    4. Create new message list:
+       - Protected messages (unchanged)
+       - Summary as user message (with SUMMARY_PREFIX)
+       - Remaining recent messages (unchanged)
+    5. Remove or convert orphaned tool messages
+
     Args:
         llm: LLM client for summarization
         messages: Current message history
         system_prompt: Original system prompt to preserve
-        model: Model to use (defaults to current)
-        
+        model: Model to use (defaults to current; may be ignored by client)
+        target_tokens: Target token count (defaults to 75% of usable context)
+
     Returns:
-        Compacted message list
+        Compacted message list with summary of removed messages
     """
     _log("Starting AI compaction...")
+
+    # Calculate target tokens if not specified
+    if target_tokens is None:
+        usable = get_usable_context()
+        target_tokens = int(usable * 0.75)
+
+    # Find which messages to compact
+    compact_start, num_to_compact = _find_messages_to_compact(messages, target_tokens)
+
+    if num_to_compact == 0:
+        _log("No messages need compaction")
+        return messages
+
+    # Split messages into three parts
+    protected_messages = messages[:PROTECTED_MESSAGE_COUNT]
+    messages_to_compact = messages[compact_start : compact_start + num_to_compact]
+    messages_to_keep = messages[compact_start + num_to_compact:]
+
+    protected_tokens = estimate_total_tokens(protected_messages)
+    compact_tokens = estimate_total_tokens(messages_to_compact)
+    keep_tokens = estimate_total_tokens(messages_to_keep)
+
+    _log(f"Protected: {len(protected_messages)} messages ({protected_tokens} tokens)")
+    _log(f"Compacting: {num_to_compact} messages ({compact_tokens} tokens)")
+    _log(f"Keeping: {len(messages_to_keep)} messages ({keep_tokens} tokens)")
+
+    # Build compaction request: removed messages + compaction prompt
+    messages_to_compact = _remove_orphaned_tool_messages(messages_to_compact)
+    compaction_messages = list(messages_to_compact)
     
-    # Build compaction request
-    compaction_messages = messages.copy()
     compaction_messages.append({
         "role": "user",
         "content": COMPACTION_PROMPT,
     })
-    
+
     try:
         # Call LLM for summary (no tools, just text)
         response = llm.chat(
             compaction_messages,
-            model=model,
-            max_tokens=4096,  # Summary should be concise
+            max_tokens=4096,
         )
-        
         summary = response.text or ""
-        
+
         if not summary:
             _log("Compaction failed: empty response")
             return messages
-        
+
         summary_tokens = estimate_tokens(summary)
         _log(f"Compaction complete: {summary_tokens} token summary")
-        
-        # Build new message list
-        compacted = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": SUMMARY_PREFIX + summary},
-        ]
-        
+
+        # Build new message list: protected + summary (with prefix) + kept
+        compacted = list(protected_messages)
+        compacted.append({
+            "role": "user",
+            "content": SUMMARY_PREFIX + summary,
+        })
+        compacted.extend(messages_to_keep)
+
+        # Remove orphaned tool messages that would cause API errors
+        compacted = _remove_orphaned_tool_messages(compacted)
+
+        final_tokens = estimate_total_tokens(compacted)
+        _log(f"Final context: {final_tokens} tokens (target: {target_tokens})")
+
         return compacted
-        
+
     except Exception as e:
         _log(f"Compaction failed: {e}")
-        # Return original messages if compaction fails
         return messages
-
 
 # =============================================================================
 # Main Context Management

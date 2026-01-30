@@ -15,7 +15,7 @@ os.environ["FIRECRAWL_API_KEY"] = PRIVATE_FIRECRAWL_API_KEY
 
 # Serper.dev API key - set your key here or via environment variable
 # Get your API key at https://serper.dev/
-PRIVATE_SERPER_API_KEY = "54ec31de4473b3516140f9c624703095805ada61"
+PRIVATE_SERPER_API_KEY = "94821c649995f79200c20ec81f28f15ed53447dd"
 os.environ["SERPER_API_KEY"] = PRIVATE_SERPER_API_KEY
 
 # Try to import httpx, fall back to requests
@@ -35,7 +35,7 @@ def web_search(
     query: str,
     num_results: int = 5,
     search_type: str = "general",
-    provider: str = "firecrawl",
+    provider: str = "serper",
 ) -> ToolResult:
     """Search the web for information using Firecrawl or Serper API.
     

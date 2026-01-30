@@ -28,7 +28,7 @@ APPROX_CHARS_PER_TOKEN = 4
 # Context limits
 MODEL_CONTEXT_LIMIT = 200_000  # Claude Opus 4.5 context window
 OUTPUT_TOKEN_MAX = 32_000  # Max output tokens to reserve
-AUTO_COMPACT_THRESHOLD = 0.85  # Trigger compaction at 85% of usable context
+AUTO_COMPACT_THRESHOLD = 0.6  # Trigger compaction at 85% of usable context
 SUMMARY_TOKEN_ESTIMATE = 4096
 
 # Pruning constants (from OpenCode)
@@ -517,7 +517,7 @@ def run_compaction(
     # Calculate target tokens if not specified
     if target_tokens is None:
         usable = get_usable_context()
-        target_tokens = int(usable * 0.65)
+        target_tokens = int(usable * 0.45)
 
     # Find which message indices to compact (by assistant-message blocks)
     compact_ids = _find_messages_to_compact(messages, target_tokens)

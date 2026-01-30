@@ -672,7 +672,33 @@ If completing the user's task requires writing or modifying files, your code and
 
 ## Background Processes (CRITICAL)
 
-When starting ANY long-running background process (daemon, server, VM, database, service):
+### Starting Background Processes (Use setsid for full detachment)
+When starting ANY background process (daemon, server, VM, database):
+**ALWAYS use 'setsid' for full process detachment:**
+  '''
+  # CORRECT - Process fully detached, won't become zombie if killed
+  setsid qemu-system-i386 [args] > /tmp/qemu.log 2>&1 &
+  
+  # CORRECT - For any daemon/server
+  setsid nginx > /tmp/nginx.log 2>&1 &
+  setsid python server.py > /tmp/server.log 2>&1 &
+  '''
+**WRONG approaches(will create zombies if killed):**
+  '''
+  # WRONG - nohup alone doesn't prevent zombies
+  nohup qemu-system-i386 [args] > /tmp/qemu.log 2>&1 &
+  
+  # WRONG - simple background(&) creates child of current shell
+  qemu-system-i386 [args] &
+  '''
+**Why setsid matters:**
+- Creates a NEW session completely detached from your shell
+- If killed, process becomes orphan adopted by PID 1 (init), which reaps it properly
+- No zombie left behind, even if you kill it
+- Without setsid, killed processes become zombies that persist until your shell exits
+
+### Start as direct child and track PID (when you need to reap)
+When starting ANY long-running background process (daemon, server, VM, database, service) and you need to stop it cleanly later:
 
 **Start as a direct child and track the PID:**
 ```
@@ -707,6 +733,15 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 4. Start fresh and save new PID
 
 **General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing.
+
+### Service guidance
+- If you must keep a server/VM running: use spawn_process to start it, wait_for_port to confirm readiness, and inspect logs via read_file/shell. For processes that must run until a specific file or artifact appears, prefer run_until_file or wait_for_file.
+- If you need to wait for an artifact file to appear (images, dumps, sockets, etc.): use wait_for_file or run_until_file instead of sleep loops.
+
+### Artifact and emulation guidance
+- For tasks where success depends on a program producing an artifact while it runs (e.g., generating an image, log, socket, or report file), avoid ad-hoc backgrounding. Prefer run_until_file (runs a command and stops once the file exists) or spawn_process + wait_for_file, with bounded timeouts.
+- For cross-compilation/emulation/VM tasks (non-host architectures, custom ELF loaders, syscall shims): first discover the runtime contract by reading the loader/VM code and enumerating supported syscalls/ABIs. Then validate any shims (custom libc, syscall wrappers, stdio FILE representation) using a tiny standalone test program under the same VM before integrating a large codebase.
+- When debugging runtime failures in an emulator: shrink to the smallest reproducer (e.g., printf + fopen/fwrite), confirm syscalls fire, then scale back up.
 
 ## Editing constraints
 
@@ -1106,10 +1141,11 @@ Before calling done() or signaling task completion:
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:
-1. **Research requirements first** - Read documentation, check common configurations
-2. **Determine correct parameters BEFORE the first start** - Don't guess
-3. **Get it right the first time** - Plan properly, avoid trial-and-error
-4. **If something doesn't work, investigate** - Check logs, errors, config - do NOT restart
+1. When running long-lived programs (VMs/emulators/servers) where success is defined by a readiness condition (file/port/log marker), do not throttle output with `| head`/`| tail` and do not use sleep polling; redirect stdout/stderr to a log file and use run_until_file / wait_for_file (or wait_for_port) as the default readiness mechanism. These wait tools prevent accidental early termination (e.g., SIGPIPE), reduce log spam, and make verification deterministic.
+2. **Research requirements first** - Read documentation, check common configurations
+3. **Determine correct parameters BEFORE the first start** - Don't guess
+4. **Get it right the first time** - Plan properly, avoid trial-and-error
+5. **If something doesn't work, investigate** - Check logs, errors, config - do NOT restart
 
 This applies universally to: VMs, databases, web servers, game servers, any background service.
 

@@ -321,9 +321,6 @@ def run_agent_loop(
                     # Don't retry authentication errors
                     if e.code in ("authentication_error", "invalid_api_key"):
                         raise
-
-                    if "Prompt is too long" in e.message:
-                        raise                
                     
                     if "BadRequestError" in error_msg:
                         _log("BadRequestError")
@@ -359,10 +356,6 @@ def run_agent_loop(
         except LLMError as e:
             _log(f"LLM error (fatal): {e.code} - {e.message}")
             emit(TurnFailedEvent(error={"message": str(e)}))          
-
-            if "Prompt is too long" in e.message:
-                ctx.done()
-                return  
             
             continue
         

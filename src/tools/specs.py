@@ -312,6 +312,251 @@ Returns the analysis/transcription based on your instruction.""",
     },
 }
 
+# Search text tool (content search with line/column)
+SEARCH_TEXT_SPEC: dict[str, Any] = {
+    "name": "search_text",
+    "description": "Search for a pattern within text files. Returns structured matches (file, line, column, snippet). Use instead of grep when you need targeted results with context.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "pattern": {"type": "string", "description": "Regex pattern or literal string to search for."},
+            "path": {"type": "string", "description": "Root directory or file to search (relative or absolute)."},
+            "regex": {"type": "boolean", "description": "Interpret pattern as regex (default true)."},
+            "glob": {"type": "string", "description": "Optional glob filter (e.g., '*.py')."},
+            "max_matches": {"type": "number", "description": "Maximum total matches to return (default 100)."},
+            "context_lines": {"type": "number", "description": "Context lines around match (default 0)."},
+        },
+        "required": ["pattern", "path"],
+    },
+}
+
+# Tree tool
+TREE_SPEC: dict[str, Any] = {
+    "name": "tree",
+    "description": "Produce a compact directory tree (like `tree`) with depth and entry limits. Use to understand project structure quickly.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Root path (relative or absolute)."},
+            "max_depth": {"type": "number", "description": "Max depth to traverse (default 4)."},
+            "max_entries": {"type": "number", "description": "Max total entries (default 500)."},
+        },
+        "required": ["path"],
+    },
+}
+
+# File info tool
+FILE_INFO_SPEC: dict[str, Any] = {
+    "name": "file_info",
+    "description": "Return structured metadata about a path (exists, type, size, mtime). Optionally compute a hash (sha256, sha1, md5).",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Path to inspect (relative or absolute)."},
+            "hash_alg": {
+                "type": "string",
+                "enum": ["", "sha256", "sha1", "md5"],
+                "description": "Optional hash algorithm (default none).",
+            },
+            "max_hash_bytes": {"type": "number", "description": "Max bytes to hash (default: full file)."},
+        },
+        "required": ["path"],
+    },
+}
+
+# Glob tool
+GLOB_SPEC: dict[str, Any] = {
+    "name": "glob",
+    "description": "Find files by glob pattern (e.g., '**/*.py') under a root directory. For content search, use search_text.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "pattern": {"type": "string", "description": "Glob pattern (supports **)."},
+            "root": {"type": "string", "description": "Root directory (relative or absolute)."},
+            "max_matches": {"type": "number", "description": "Max matches to return (default 200)."},
+        },
+        "required": ["pattern", "root"],
+    },
+}
+
+# Diff files tool
+DIFF_FILES_SPEC: dict[str, Any] = {
+    "name": "diff_files",
+    "description": "Compute a unified diff between two text files. Use for verification when comparing expected vs actual output.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path_a": {"type": "string", "description": "First file path."},
+            "path_b": {"type": "string", "description": "Second file path."},
+            "max_lines": {"type": "number", "description": "Max diff lines to return (default 400)."},
+            "context": {"type": "number", "description": "Unified diff context lines (default 3)."},
+        },
+        "required": ["path_a", "path_b"],
+    },
+}
+
+# Spawn process tool
+SPAWN_PROCESS_SPEC: dict[str, Any] = {
+    "name": "spawn_process",
+    "description": "Start a long-running process in the background. Returns PID and log paths. Use wait_for_port to confirm the service is up.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "command": {"type": "string", "description": "Command to run (via bash -lc)."},
+            "cwd": {"type": "string", "description": "Working directory (default: workspace)."},
+            "stdout_path": {"type": "string", "description": "File for stdout (default: auto in /tmp)."},
+            "stderr_path": {"type": "string", "description": "File for stderr (default: auto in /tmp)."},
+        },
+        "required": ["command"],
+    },
+}
+
+# Kill process tool
+KILL_PROCESS_SPEC: dict[str, Any] = {
+    "name": "kill_process",
+    "description": "Terminate a process by PID. Use TERM first; use KILL if needed.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "pid": {"type": "integer", "description": "Process ID to terminate."},
+            "signal": {"type": "string", "enum": ["TERM", "KILL"], "description": "Signal (default TERM)."},
+        },
+        "required": ["pid"],
+    },
+}
+
+# Wait for port tool
+WAIT_FOR_PORT_SPEC: dict[str, Any] = {
+    "name": "wait_for_port",
+    "description": "Wait until a TCP host:port is accepting connections (or timeout). Use after spawn_process to ensure server is up.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "host": {"type": "string", "description": "Hostname or IP (default 127.0.0.1)."},
+            "port": {"type": "integer", "description": "TCP port to check."},
+            "timeout_sec": {"type": "number", "description": "Timeout in seconds (default 15)."},
+        },
+        "required": ["port"],
+    },
+}
+
+# Wait for file tool
+WAIT_FOR_FILE_SPEC: dict[str, Any] = {
+    "name": "wait_for_file",
+    "description": "Wait until a filesystem path exists (or timeout). Useful when a program generates an output artifact asynchronously.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Path to wait for."},
+            "timeout_sec": {"type": "number", "description": "Timeout seconds (default 15)."},
+            "min_size_bytes": {"type": "integer", "description": "Require size >= this many bytes (default 0)."},
+        },
+        "required": ["path"],
+    },
+}
+
+# Run until file tool
+RUN_UNTIL_FILE_SPEC: dict[str, Any] = {
+    "name": "run_until_file",
+    "description": "Run a command until a target file exists (or timeout), then terminate. Useful for interactive programs that render a frame/file as readiness.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "command": {"type": "string", "description": "Command to run (via bash -lc)."},
+            "file_path": {"type": "string", "description": "File to wait for."},
+            "cwd": {"type": "string", "description": "Working directory (default: workspace)."},
+            "timeout_sec": {"type": "number", "description": "Timeout seconds (default 30)."},
+            "min_size_bytes": {"type": "integer", "description": "Require file size >= this (default 1)."},
+        },
+        "required": ["command", "file_path"],
+    },
+}
+
+# Image info tool
+IMAGE_INFO_SPEC: dict[str, Any] = {
+    "name": "image_info",
+    "description": "Return basic metadata about an image file (format, width, height, file size). Uses identify when available.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Image file path."},
+        },
+        "required": ["path"],
+    },
+}
+
+# Crop image tool
+CROP_IMAGE_SPEC: dict[str, Any] = {
+    "name": "crop_image",
+    "description": "Crop an image to a rectangle and prepare it for vision. Coordinates are pixels, origin top-left.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Source image path."},
+            "x": {"type": "integer", "description": "Left coordinate (px)."},
+            "y": {"type": "integer", "description": "Top coordinate (px)."},
+            "width": {"type": "integer", "description": "Crop width (px)."},
+            "height": {"type": "integer", "description": "Crop height (px)."},
+            "max_bytes": {"type": "number", "description": "Max output size (default 300000)."},
+        },
+        "required": ["path", "x", "y", "width", "height"],
+    },
+}
+
+# Sample image pixels tool
+SAMPLE_IMAGE_PIXELS_SPEC: dict[str, Any] = {
+    "name": "sample_image_pixels",
+    "description": "Sample RGB pixel values from an image (PPM/PNM). Use for precise numeric evidence without attaching the whole image.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Image path (PPM/PNM recommended)."},
+            "points": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}},
+                    "required": ["x", "y"],
+                },
+                "description": "List of {x, y} points to sample.",
+            },
+            "max_points": {"type": "number", "description": "Safety cap (default 200)."},
+        },
+        "required": ["path", "points"],
+    },
+}
+
+# Image similarity tool
+IMAGE_SIMILARITY_SPEC: dict[str, Any] = {
+    "name": "image_similarity",
+    "description": "Compute cosine similarity between two images' RGB vectors. Supports PPM/PNM. Optionally downscale with max_dim.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path_a": {"type": "string", "description": "First image path."},
+            "path_b": {"type": "string", "description": "Second image path."},
+            "max_dim": {"type": "number", "description": "If >0, downscale both before comparison (default 0)."},
+        },
+        "required": ["path_a", "path_b"],
+    },
+}
+
+# Image diff tool
+IMAGE_DIFF_SPEC: dict[str, Any] = {
+    "name": "image_diff",
+    "description": "Create a visual diff image between two images. Returns diff attachment and summary metrics.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path_a": {"type": "string", "description": "First image path."},
+            "path_b": {"type": "string", "description": "Second image path."},
+            "max_dim": {"type": "number", "description": "Downscale before diff (default 256)."},
+            "max_bytes": {"type": "number", "description": "Max diff attachment size (default 300000)."},
+        },
+        "required": ["path_a", "path_b"],
+    },
+}
+
 # All tool specs
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "shell_command": SHELL_COMMAND_SPEC,
@@ -324,6 +569,21 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
     "transcript": TRANSCRIPT_SPEC,
+    "search_text": SEARCH_TEXT_SPEC,
+    "tree": TREE_SPEC,
+    "file_info": FILE_INFO_SPEC,
+    "glob": GLOB_SPEC,
+    "diff_files": DIFF_FILES_SPEC,
+    "spawn_process": SPAWN_PROCESS_SPEC,
+    "kill_process": KILL_PROCESS_SPEC,
+    "wait_for_port": WAIT_FOR_PORT_SPEC,
+    "wait_for_file": WAIT_FOR_FILE_SPEC,
+    "run_until_file": RUN_UNTIL_FILE_SPEC,
+    "image_info": IMAGE_INFO_SPEC,
+    "crop_image": CROP_IMAGE_SPEC,
+    "sample_image_pixels": SAMPLE_IMAGE_PIXELS_SPEC,
+    "image_similarity": IMAGE_SIMILARITY_SPEC,
+    "image_diff": IMAGE_DIFF_SPEC,
 }
 
 

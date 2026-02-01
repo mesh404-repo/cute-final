@@ -114,8 +114,16 @@ class ToolRegistry:
         self._config = config or ExecutorConfig()
         self._cache: Dict[str, CachedResult] = {}
         self._stats = ExecutorStats()
+        self._process_runner: Optional[Any] = None  # ProcessToolRunner, lazy init
 
         self.PLATFORM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _get_process_runner(self) -> Any:
+        """Lazy init ProcessToolRunner for spawn_process / kill_process."""
+        if self._process_runner is None:
+            from src.tools.process import ProcessToolRunner
+            self._process_runner = ProcessToolRunner()
+        return self._process_runner
 
     def _save_to_platform_cache(self, content: str | bytes, extension: str = "txt", prefix: str = "response") -> Path:
         """Save content to platform cache and return the file path.
@@ -193,7 +201,37 @@ class ToolRegistry:
             elif name == "web_search":
                 result = self._execute_web_search(arguments)
             elif name == "transcript":
-                result = self._execute_transcript(arguments)            
+                result = self._execute_transcript(arguments)
+            elif name == "search_text":
+                result = self._execute_search_text(cwd, arguments)
+            elif name == "tree":
+                result = self._execute_tree(cwd, arguments)
+            elif name == "file_info":
+                result = self._execute_file_info(cwd, arguments)
+            elif name == "glob":
+                result = self._execute_glob(cwd, arguments)
+            elif name == "diff_files":
+                result = self._execute_diff_files(cwd, arguments)
+            elif name == "spawn_process":
+                result = self._execute_spawn_process(cwd, arguments)
+            elif name == "kill_process":
+                result = self._execute_kill_process(arguments)
+            elif name == "wait_for_port":
+                result = self._execute_wait_for_port(arguments)
+            elif name == "wait_for_file":
+                result = self._execute_wait_for_file(arguments)
+            elif name == "run_until_file":
+                result = self._execute_run_until_file(cwd, arguments)
+            elif name == "image_info":
+                result = self._execute_image_info(cwd, arguments)
+            elif name == "crop_image":
+                result = self._execute_crop_image(cwd, arguments)
+            elif name == "sample_image_pixels":
+                result = self._execute_sample_image_pixels(cwd, arguments)
+            elif name == "image_similarity":
+                result = self._execute_image_similarity(cwd, arguments)
+            elif name == "image_diff":
+                result = self._execute_image_diff(cwd, arguments)
             else:
                 result = ToolResult.fail(f"Unknown tool: {name}")
                 
@@ -681,7 +719,217 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
         
         from src.tools.web_search import web_search
         return web_search(query, num_results, search_type)
-    
+
+    def _execute_search_text(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Search for pattern within text files."""
+        pattern = args.get("pattern", "")
+        path = args.get("path", "")
+        if not pattern or not path:
+            return ToolResult.invalid("Missing required parameters 'pattern' and 'path'. Usage: search_text(pattern: str, path: str, ...)")
+        from src.tools.search_text import run_search_text
+        return run_search_text(
+            cwd,
+            pattern=pattern,
+            path=path,
+            regex=args.get("regex", True),
+            glob=args.get("glob", ""),
+            max_matches=int(args.get("max_matches", 100)),
+            context_lines=int(args.get("context_lines", 0)),
+        )
+
+    def _execute_tree(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Produce directory tree."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: tree(path: str, ...)")
+        from src.tools.fs import run_tree
+        return run_tree(
+            cwd,
+            path=path,
+            max_depth=int(args.get("max_depth", 4)),
+            max_entries=int(args.get("max_entries", 500)),
+        )
+
+    def _execute_file_info(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Return metadata about a path; optionally hash."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: file_info(path: str, ...)")
+        from src.tools.fs import run_file_info
+        max_hash_bytes = args.get("max_hash_bytes")
+        return run_file_info(
+            cwd,
+            path=path,
+            hash_alg=(args.get("hash_alg") or "").strip(),
+            max_hash_bytes=int(max_hash_bytes) if max_hash_bytes is not None else None,
+        )
+
+    def _execute_glob(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Find files by glob pattern."""
+        pattern = args.get("pattern", "")
+        root = args.get("root", "")
+        if not pattern or not root:
+            return ToolResult.invalid("Missing required parameters 'pattern' and 'root'. Usage: glob(pattern: str, root: str, ...)")
+        from src.tools.fs import run_glob
+        return run_glob(
+            cwd,
+            pattern=pattern,
+            root=root,
+            max_matches=int(args.get("max_matches", 200)),
+        )
+
+    def _execute_diff_files(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Compute unified diff between two files."""
+        path_a = args.get("path_a", "")
+        path_b = args.get("path_b", "")
+        if not path_a or not path_b:
+            return ToolResult.invalid("Missing required parameters 'path_a' and 'path_b'. Usage: diff_files(path_a: str, path_b: str, ...)")
+        from src.tools.fs import run_diff_files
+        return run_diff_files(
+            cwd,
+            path_a=path_a,
+            path_b=path_b,
+            max_lines=int(args.get("max_lines", 400)),
+            context=int(args.get("context", 3)),
+        )
+
+    def _execute_spawn_process(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Start a long-running process in the background."""
+        command = args.get("command", "")
+        if not command:
+            return ToolResult.invalid("Missing required parameter 'command'. Usage: spawn_process(command: str, ...)")
+        runner = self._get_process_runner()
+        return runner.spawn_process(
+            cwd,
+            command=command,
+            workdir=args.get("cwd"),
+            stdout_path=args.get("stdout_path"),
+            stderr_path=args.get("stderr_path"),
+        )
+
+    def _execute_kill_process(self, args: dict[str, Any]) -> ToolResult:
+        """Terminate a process by PID."""
+        pid = args.get("pid")
+        if pid is None:
+            return ToolResult.invalid("Missing required parameter 'pid'. Usage: kill_process(pid: int, ...)")
+        runner = self._get_process_runner()
+        return runner.kill_process(int(pid), sig=args.get("signal", "TERM"))
+
+    def _execute_wait_for_port(self, args: dict[str, Any]) -> ToolResult:
+        """Wait until TCP host:port is accepting connections."""
+        port = args.get("port")
+        if port is None:
+            return ToolResult.invalid("Missing required parameter 'port'. Usage: wait_for_port(port: int, ...)")
+        from src.tools.process import run_wait_for_port
+        return run_wait_for_port(
+            host=args.get("host", "127.0.0.1"),
+            port=int(port),
+            timeout_sec=float(args.get("timeout_sec", 15)),
+            poll_interval_sec=float(args.get("poll_interval_sec", 0.2)),
+        )
+
+    def _execute_wait_for_file(self, args: dict[str, Any]) -> ToolResult:
+        """Wait until a filesystem path exists."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: wait_for_file(path: str, ...)")
+        from src.tools.process import run_wait_for_file
+        return run_wait_for_file(
+            path=path,
+            timeout_sec=float(args.get("timeout_sec", 15)),
+            poll_interval_sec=float(args.get("poll_interval_sec", 0.1)),
+            min_size_bytes=int(args.get("min_size_bytes", 0)),
+        )
+
+    def _execute_run_until_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Run command until target file exists, then terminate."""
+        command = args.get("command", "")
+        file_path = args.get("file_path", "")
+        if not command or not file_path:
+            return ToolResult.invalid("Missing required parameters 'command' and 'file_path'. Usage: run_until_file(command: str, file_path: str, ...)")
+        from src.tools.process import run_run_until_file
+        return run_run_until_file(
+            cwd,
+            command=command,
+            file_path=file_path,
+            workdir=args.get("cwd"),
+            timeout_sec=float(args.get("timeout_sec", 30)),
+            poll_interval_sec=float(args.get("poll_interval_sec", 0.1)),
+            min_size_bytes=int(args.get("min_size_bytes", 1)),
+            terminate_grace_sec=float(args.get("terminate_grace_sec", 2.0)),
+        )
+
+    def _execute_image_info(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Return basic metadata about an image file."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: image_info(path: str)")
+        from src.tools.media_extra import run_image_info
+        return run_image_info(cwd, path=path)
+
+    def _execute_crop_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Crop an image to a rectangle."""
+        path = args.get("path", "")
+        x = args.get("x")
+        y = args.get("y")
+        width = args.get("width")
+        height = args.get("height")
+        if path is None or x is None or y is None or width is None or height is None:
+            return ToolResult.invalid("Missing required parameters path, x, y, width, height. Usage: crop_image(path, x, y, width, height, ...)")
+        from src.tools.media_extra import run_crop_image
+        return run_crop_image(
+            cwd,
+            path=path,
+            x=int(x),
+            y=int(y),
+            width=int(width),
+            height=int(height),
+            max_bytes=int(args.get("max_bytes", 300000)),
+        )
+
+    def _execute_sample_image_pixels(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Sample RGB pixel values from an image."""
+        path = args.get("path", "")
+        points = args.get("points") or []
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: sample_image_pixels(path: str, points: [...], ...)")
+        from src.tools.media_extra import run_sample_image_pixels
+        return run_sample_image_pixels(
+            cwd,
+            path=path,
+            points=points,
+            max_points=int(args.get("max_points", 200)),
+        )
+
+    def _execute_image_similarity(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Compute cosine similarity between two images."""
+        path_a = args.get("path_a", "")
+        path_b = args.get("path_b", "")
+        if not path_a or not path_b:
+            return ToolResult.invalid("Missing required parameters 'path_a' and 'path_b'. Usage: image_similarity(path_a: str, path_b: str, ...)")
+        from src.tools.media_extra import run_image_similarity
+        return run_image_similarity(
+            cwd,
+            path_a=path_a,
+            path_b=path_b,
+            max_dim=int(args.get("max_dim", 0)),
+        )
+
+    def _execute_image_diff(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Create a visual diff image between two images."""
+        path_a = args.get("path_a", "")
+        path_b = args.get("path_b", "")
+        if not path_a or not path_b:
+            return ToolResult.invalid("Missing required parameters 'path_a' and 'path_b'. Usage: image_diff(path_a: str, path_b: str, ...)")
+        from src.tools.media_extra import run_image_diff
+        return run_image_diff(
+            cwd,
+            path_a=path_a,
+            path_b=path_b,
+            max_dim=int(args.get("max_dim", 256)),
+            max_bytes=int(args.get("max_bytes", 300000)),
+        )
+
     # -------------------------------------------------------------------------
     # Caching methods
     # -------------------------------------------------------------------------

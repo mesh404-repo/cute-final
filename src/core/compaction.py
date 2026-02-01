@@ -39,6 +39,7 @@ PRUNE_MARKER = "[Old tool result content cleared]"
 # Image limits (Anthropic max: 100, but we keep fewer for efficiency)
 MAX_IMAGES_PER_REQUEST = 100
 IMAGE_PRUNE_TARGET = 10  # Keep only last N images (LLM has already seen older ones)
+IMAGE_PRUNE_MARKER = "[Old image content cleared]"
 
 # Compaction prompts (from Codex)
 COMPACTION_PROMPT = """You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff summary for another LLM that will resume the task.
@@ -352,10 +353,10 @@ def prune_old_images(
         new_content = []
         for part in content:
             if isinstance(part, dict) and part.get("type") in ("image_url", "image"):
-                # Replace with text placeholder
+                # Replace with text placeholder (like PRUNE_MARKER for tool outputs)
                 new_content.append({
                     "type": "text",
-                    "text": "[Image removed to stay within API limits]"
+                    "text": IMAGE_PRUNE_MARKER,
                 })
             else:
                 new_content.append(part)

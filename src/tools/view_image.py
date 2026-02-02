@@ -170,7 +170,7 @@ def view_image(
         )
     
     # Check if it's an image file
-    valid_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ppm"}
+    valid_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ppm", ".pgm", ".pbm", ".pnm"}
     if path.suffix.lower() not in valid_extensions:
         return ToolResult(
             success=False,

@@ -19,9 +19,14 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Tuple
 
+from src.images.pnm import pnm_to_png_bytes
+
 # Maximum image dimensions (like Codex)
 MAX_WIDTH = 2048
 MAX_HEIGHT = 768
+
+# PNM extensions: convert to PNG so API receives image/png (Anthropic accepts only png/jpeg/gif/webp)
+_PNM_EXTS = {".ppm", ".pgm", ".pbm", ".pnm"}
 
 # Try to import PIL for image processing
 try:
@@ -42,7 +47,6 @@ def _get_mime_type(path: Path) -> str:
         ".gif": "image/gif",
         ".webp": "image/webp",
         ".bmp": "image/bmp",
-        ".ppm": "image/x-portable-pixmap",
     }
     return mime_types.get(ext, "image/png")
 
@@ -56,6 +60,9 @@ def _file_hash(path: Path) -> str:
 def load_image_bytes(path: Path) -> Tuple[bytes, str]:
     """
     Load image bytes from disk.
+    PNM (PPM/PGM/PBM) files are converted to PNG so the API receives
+    a vision-supported type (image/png); Anthropic accepts only
+    image/jpeg, image/png, image/gif, image/webp.
     
     Args:
         path: Path to image file
@@ -63,16 +70,14 @@ def load_image_bytes(path: Path) -> Tuple[bytes, str]:
     Returns:
         Tuple of (bytes, mime_type)
     """
+    ext = path.suffix.lower()
+    if ext in _PNM_EXTS:
+        data = pnm_to_png_bytes(path, max_width=MAX_WIDTH, max_height=MAX_HEIGHT)
+        return data, "image/png"
     with open(path, "rb") as f:
         data = f.read()
     mime = _get_mime_type(path)
     return data, mime
-
-
-# MIME types that LLM APIs (e.g. Anthropic, OpenRouter) accept for images
-_API_ACCEPTED_IMAGE_MIMES = frozenset({
-    "image/png", "image/jpeg", "image/gif", "image/webp",
-})
 
 
 def resize_image(
@@ -83,8 +88,6 @@ def resize_image(
 ) -> Tuple[bytes, str]:
     """
     Resize image if it exceeds max dimensions.
-    Converts non-API formats (e.g. PPM, BMP) to PNG so the result is always
-    acceptable to LLM APIs (image/png, image/jpeg, image/gif, image/webp).
     
     Args:
         data: Image bytes
@@ -96,28 +99,28 @@ def resize_image(
         Tuple of (resized_bytes, mime_type)
     """
     if not HAS_PIL:
-        # Can't convert without PIL, return as-is (may fail at API for PPM/BMP)
+        # Can't resize without PIL, return as-is
         return data, mime
     
     try:
         img = Image.open(BytesIO(data))
-        needs_resize = img.width > max_width or img.height > max_height
-        needs_convert = mime not in _API_ACCEPTED_IMAGE_MIMES
         
-        if not needs_resize and not needs_convert:
+        # Check if resize needed
+        if img.width <= max_width and img.height <= max_height:
             return data, mime
         
-        if needs_resize:
-            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+        # Resize maintaining aspect ratio
+        img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
         
+        # Encode back to bytes
         output = BytesIO()
-        if needs_convert or img.mode in ("RGBA", "LA") or mime == "image/png":
-            # Always use PNG for non-API formats or transparency
-            if img.mode not in ("RGB", "RGBA"):
-                img = img.convert("RGB")
+        
+        # Use PNG for transparency, JPEG for photos
+        if img.mode in ("RGBA", "LA") or mime == "image/png":
             img.save(output, format="PNG", optimize=True)
             return output.getvalue(), "image/png"
         else:
+            # Convert to RGB if needed
             if img.mode != "RGB":
                 img = img.convert("RGB")
             img.save(output, format="JPEG", quality=85, optimize=True)

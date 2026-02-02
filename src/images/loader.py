@@ -69,6 +69,12 @@ def load_image_bytes(path: Path) -> Tuple[bytes, str]:
     return data, mime
 
 
+# MIME types that LLM APIs (e.g. Anthropic, OpenRouter) accept for images
+_API_ACCEPTED_IMAGE_MIMES = frozenset({
+    "image/png", "image/jpeg", "image/gif", "image/webp",
+})
+
+
 def resize_image(
     data: bytes,
     mime: str,
@@ -77,6 +83,8 @@ def resize_image(
 ) -> Tuple[bytes, str]:
     """
     Resize image if it exceeds max dimensions.
+    Converts non-API formats (e.g. PPM, BMP) to PNG so the result is always
+    acceptable to LLM APIs (image/png, image/jpeg, image/gif, image/webp).
     
     Args:
         data: Image bytes
@@ -88,28 +96,28 @@ def resize_image(
         Tuple of (resized_bytes, mime_type)
     """
     if not HAS_PIL:
-        # Can't resize without PIL, return as-is
+        # Can't convert without PIL, return as-is (may fail at API for PPM/BMP)
         return data, mime
     
     try:
         img = Image.open(BytesIO(data))
+        needs_resize = img.width > max_width or img.height > max_height
+        needs_convert = mime not in _API_ACCEPTED_IMAGE_MIMES
         
-        # Check if resize needed
-        if img.width <= max_width and img.height <= max_height:
+        if not needs_resize and not needs_convert:
             return data, mime
         
-        # Resize maintaining aspect ratio
-        img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+        if needs_resize:
+            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
         
-        # Encode back to bytes
         output = BytesIO()
-        
-        # Use PNG for transparency, JPEG for photos
-        if img.mode in ("RGBA", "LA") or mime == "image/png":
+        if needs_convert or img.mode in ("RGBA", "LA") or mime == "image/png":
+            # Always use PNG for non-API formats or transparency
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGB")
             img.save(output, format="PNG", optimize=True)
             return output.getvalue(), "image/png"
         else:
-            # Convert to RGB if needed
             if img.mode != "RGB":
                 img = img.convert("RGB")
             img.save(output, format="JPEG", quality=85, optimize=True)

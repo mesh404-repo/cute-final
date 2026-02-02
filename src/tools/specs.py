@@ -159,10 +159,9 @@ Rules:
 # View image tool
 VIEW_IMAGE_SPEC: dict[str, Any] = {
     "name": "view_image",
-    "description": """View a local image from the filesystem.
-Only use this if given a full filepath by the user, and the image isn't already attached.
-Supported formats: PNG, JPEG, GIF, WebP, BMP.
-The image will be loaded and attached to the conversation for analysis.""",
+    "description": """View a local image from the filesystem for visual analysis.
+Use this when you need to interpret visual content: (1) images the user points to, or (2) images you generate from data (e.g. rendering coordinates, toolpaths, or geometric data to a bitmap) to read text or shapes—write the image to a file (e.g. PPM with Python stdlib, or PNG/JPEG if available) then call view_image with that path.
+Supported formats: PNG, JPEG, GIF, WebP, BMP, PPM.""",
     "parameters": {
         "type": "object",
         "properties": {

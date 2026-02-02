@@ -614,6 +614,13 @@ ls -lh /app/*.backup  # Verify backups exist
 
 Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
 
+### Interpreting geometric or toolpath data
+
+When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):
+
+- **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use `view_image` to interpret the result. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
+- If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and viewing it with `view_image` rather than iterating on the same approach.
+
 ### Best practices
 
 Follow language-specific best practices in your implementations:

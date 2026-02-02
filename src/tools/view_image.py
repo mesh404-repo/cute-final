@@ -45,6 +45,10 @@ def get_image_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
     if len(data) >= 30 and data[:4] == b'RIFF' and data[8:12] == b'WEBP':
         return _parse_webp_dimensions(data)
     
+    # PPM P6: "P6\n" then optional comment lines, then "W H\n" then "255\n"
+    if data[:2] == b'P6' and (data[2:3] == b'\n' or data[2:3] == b' '):
+        return _parse_ppm_dimensions(data)
+    
     return None
 
 
@@ -76,6 +80,42 @@ def _parse_jpeg_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
             break
     
     return None
+
+
+def _parse_ppm_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
+    """Parse PPM P6 dimensions from header (P6, width height, 255)."""
+    try:
+        i = 2
+        while i < len(data) and data[i:i + 1] in (b' ', b'\n', b'\t'):
+            i += 1
+        if i >= len(data):
+            return None
+        # Skip comment lines
+        while data[i:i + 1] == b'#':
+            end = data.find(b'\n', i)
+            if end == -1:
+                return None
+            i = end + 1
+            while i < len(data) and data[i:i + 1] in (b' ', b'\n', b'\t'):
+                i += 1
+        # Read width and height
+        start = i
+        while i < len(data) and data[i:i + 1].isdigit():
+            i += 1
+        if i == start or i >= len(data):
+            return None
+        width = int(data[start:i].decode('ascii'))
+        while i < len(data) and data[i:i + 1] in (b' ', b'\n', b'\t'):
+            i += 1
+        start = i
+        while i < len(data) and data[i:i + 1].isdigit():
+            i += 1
+        if i == start:
+            return None
+        height = int(data[start:i].decode('ascii'))
+        return (width, height)
+    except (ValueError, IndexError):
+        return None
 
 
 def _parse_webp_dimensions(data: bytes) -> Optional[Tuple[int, int]]:
@@ -130,7 +170,7 @@ def view_image(
         )
     
     # Check if it's an image file
-    valid_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+    valid_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ppm"}
     if path.suffix.lower() not in valid_extensions:
         return ToolResult(
             success=False,
@@ -171,22 +211,3 @@ def view_image(
             success=False,
             output=f"Failed to load image: {e}",
         )
-
-
-# Tool specification for LLM
-VIEW_IMAGE_SPEC: Dict[str, Any] = {
-    "name": "view_image",
-    "description": """View a local image from the filesystem.
-Only use this if given a full filepath by the user, and the image isn't already attached.
-Supported formats: PNG, JPEG, GIF, WebP, BMP.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "Local filesystem path to the image file",
-            },
-        },
-        "required": ["path"],
-    },
-}

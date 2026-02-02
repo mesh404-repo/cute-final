@@ -42,6 +42,7 @@ def _get_mime_type(path: Path) -> str:
         ".gif": "image/gif",
         ".webp": "image/webp",
         ".bmp": "image/bmp",
+        ".ppm": "image/x-portable-pixmap",
     }
     return mime_types.get(ext, "image/png")
 

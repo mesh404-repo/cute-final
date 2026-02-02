@@ -737,6 +737,13 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 - Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x nginx | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
 - Before marking the task complete: verify expected processes are running, ensure no duplicate/stale processes from failed attempts, and kill any processes you started that aren't needed for verification.
 
+## Images and media
+
+- If the task references an image on disk, use read_image so the model can see it.
+- If the image is large or stored in a raw format (e.g., PPM/PGM), read_image prepares/downscales/converts the image then attaches it; retry with smaller max_dim/max_bytes if needed.
+- Use image_info for dimensions and format.
+
+
 ## Artifacts and long-running programs
 
 - When success depends on a program producing an artifact (image, log, socket, report): prefer run_until_file (runs command and stops once the file exists) or spawn_process + wait_for_file, with bounded timeouts. Avoid ad-hoc backgrounding and sleep polling.

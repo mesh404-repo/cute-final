@@ -196,6 +196,10 @@ class ToolRegistry:
                 result = self._execute_apply_patch(cwd, arguments)
             elif name == "view_image":
                 result = self._execute_view_image(cwd, arguments)
+            elif name == "image_info":
+                result = self._execute_image_info(cwd, arguments)    
+            elif name == "read_image":
+                result = self._execute_read_image(cwd, arguments)
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
@@ -323,6 +327,30 @@ Partial output before timeout:
             
         except Exception as e:
             return ToolResult.fail(f"Command failed: {str(e)}")
+    
+
+    def _execute_read_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Prepare an image for vision (copy/downscale/convert) and attach it."""
+        path = args.get("path", "")
+        max_dim = int(args.get("max_dim", 1024))
+        max_bytes = int(args.get("max_bytes", 300000))
+
+        if not path:
+            return ToolResult.invalid(
+                "Missing required parameter 'path'. "
+                "Usage: read_image(path: str, max_dim?: int, max_bytes?: int)"
+            )
+
+        from src.tools.media_extra import read_image
+        return read_image(path, cwd, max_dim=max_dim, max_bytes=max_bytes)
+
+    def _execute_image_info(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Return basic metadata about an image file."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: image_info(path: str)")
+        from src.tools.media_extra import run_image_info
+        return run_image_info(cwd, path=path)
     
     def _execute_read_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Read file contents."""

@@ -159,17 +159,15 @@ Rules:
 # View image tool
 VIEW_IMAGE_SPEC: dict[str, Any] = {
     "name": "view_image",
-    "description": """View a local image from the filesystem.
-Only use this if given a full filepath by the user, and the image isn't already attached.
-Supported formats: PNG, JPEG, GIF, WebP, BMP.
-The image will be loaded and attached to the conversation for analysis.""",
+    "description": """Prepare an image file for model vision by copying (and if needed, downscaling/converting) it, then attaching it to the conversation.
+Use when a task references an image on disk (e.g. /app/code.png, chess_board.ppm).
+Supports PNM (PPM/PGM/PBM); if the image is too large, downscales using ImageMagick or ffmpeg, or pure-Python for PNM.""",
     "parameters": {
         "type": "object",
         "properties": {
-            "path": {
-                "type": "string",
-                "description": "Local filesystem path to the image file",
-            },
+            "path": {"type": "string", "description": "Image file path."},
+            "max_dim": {"type": "integer", "description": "Max width/height in pixels (default 1024)."},
+            "max_bytes": {"type": "integer", "description": "Max output file size in bytes (default 300000)."},
         },
         "required": ["path"],
     },
@@ -389,36 +387,6 @@ RUN_UNTIL_FILE_SPEC: dict[str, Any] = {
     },
 }
 
-# Read image tool (prepare/downscale/convert for vision, then attach)
-READ_IMAGE_SPEC: dict[str, Any] = {
-    "name": "read_image",
-    "description": """Prepare an image file for model vision by copying (and if needed, downscaling/converting) it, then attaching it to the conversation.
-Use when a task references an image on disk (e.g. /app/code.png, chess_board.ppm).
-Supports PNM (PPM/PGM/PBM); if the image is too large, downscales using ImageMagick or ffmpeg, or pure-Python for PNM.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {"type": "string", "description": "Image file path."},
-            "max_dim": {"type": "integer", "description": "Max width/height in pixels (default 1024)."},
-            "max_bytes": {"type": "integer", "description": "Max output file size in bytes (default 300000)."},
-        },
-        "required": ["path"],
-    },
-}
-
-# Image info tool
-IMAGE_INFO_SPEC: dict[str, Any] = {
-    "name": "image_info",
-    "description": "Return basic metadata about an image file (format, width, height, file size). Uses identify when available.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {"type": "string", "description": "Image file path."},
-        },
-        "required": ["path"],
-    },
-}
-
 # All tool specs
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "shell_command": SHELL_COMMAND_SPEC,
@@ -428,7 +396,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "grep_files": GREP_FILES_SPEC,
     "apply_patch": APPLY_PATCH_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
-    "read_image": READ_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
     "transcript": TRANSCRIPT_SPEC,
@@ -437,7 +404,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "wait_for_port": WAIT_FOR_PORT_SPEC,
     "wait_for_file": WAIT_FOR_FILE_SPEC,
     "run_until_file": RUN_UNTIL_FILE_SPEC,
-    "image_info": IMAGE_INFO_SPEC,
 }
 
 

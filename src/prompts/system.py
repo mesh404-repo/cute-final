@@ -739,10 +739,8 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 
 ## Images and media
 
-- If the task references an image on disk, use read_image so the model can see it.
-- If the image is large or stored in a raw format (e.g., PPM/PGM), read_image prepares/downscales/converts the image then attaches it; retry with smaller max_dim/max_bytes if needed.
-- Use image_info for dimensions and format.
-
+- If the task references an image on disk, use view_image so the model can see it.
+- If the image is large or stored in a raw format (e.g., PPM/PGM), view_image prepares/downscales/converts the image then attaches it; retry with smaller max_dim/max_bytes if needed.
 
 ## Artifacts and long-running programs
 

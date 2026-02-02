@@ -77,6 +77,7 @@ class LiteLLMClient:
         temperature: Optional[float] = None,
         max_tokens: int = 16384,
         cost_limit: Optional[float] = None,
+        timeout: Optional[int] = None,
         # OpenAI caching options
         cache_extended_retention: bool = True,
         cache_key: Optional[str] = None,
@@ -85,6 +86,7 @@ class LiteLLMClient:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.cost_limit = cost_limit or float(os.environ.get("LLM_COST_LIMIT", "100.0"))
+        self.timeout = timeout if timeout is not None else int(os.environ.get("LLM_TIMEOUT", "300"))
         
         self._total_cost = 0.0
         self._total_tokens = 0
@@ -161,6 +163,8 @@ class LiteLLMClient:
         # Add extra body params (like reasoning effort)
         if extra_body:
             kwargs.update(extra_body)
+        
+        kwargs["timeout"] = self.timeout
         
         try:
             response = self._litellm.completion(**kwargs)

@@ -47,6 +47,8 @@ CONFIG: Dict[str, Any] = {
     "max_iterations": 400,
     
     "cost_limit": 100.0,
+
+    "llm_timeout": 180.0,
     # Maximum tokens for tool output truncation (middle-out strategy)
     "max_output_tokens": 2500,  # ~10KB
     

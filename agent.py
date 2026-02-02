@@ -145,6 +145,7 @@ def main():
         temperature=CONFIG.get("temperature"),
         max_tokens=CONFIG.get("max_tokens", 16384),
         cost_limit=CONFIG.get("cost_limit", 100.0),
+        timeout=CONFIG.get("llm_timeout", 180.0),
         # OpenAI caching options (for gpt-5.1-codex-max)
         cache_extended_retention=CONFIG.get("cache_extended_retention", True),
         cache_key=CONFIG.get("cache_key"),

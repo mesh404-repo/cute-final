@@ -603,7 +603,6 @@ You are a coding agent. Please keep going until the query is completely resolved
 ### Workflow
 
 - **Strategy and plan**: In your first response, include a brief strategy (2–5 bullets) and a concrete plan (3–8 steps). If the plan becomes wrong or incomplete, emit a short plan update.
-- **Execute**: Use tools for all actions. Prefer structured tools (tree, list_dir, search_text, file_info, diff_files, grep_files) to keep outputs small and deterministic.
 - **Validate**: Before considering the task complete, run task-provided scripts/tests (e.g. /app/eval.py, pytest, ./tests/test.sh). Do not leave temporary verification artifacts (e.g. compiled binaries) in task directories; use /tmp or remove them after verification.
 
 ### Task understanding
@@ -688,7 +687,6 @@ If completing the user's task requires writing or modifying files, your code and
 
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
 - When searching for files mentioned in the task instruction, search first in the directory specified in the task. If those files do not exist there, search in other directories.
-- Prefer structured tools (tree, list_dir, search_text, file_info, diff_files, grep_files) to minimize noisy output; avoid dumping large raw command output when a tool can return focused results.
 - Do not paste shell commands as plain text; always call the shell tool (or another tool) to execute. Keep outputs small: prefer grep/rg, structured tools, or redirect to a file and inspect; avoid piping long-running commands into `| head`/`| tail` (SIGPIPE can change behavior). The shell tool truncates previews and stores full logs when needed.
 - If a tool call fails: (1) read the error carefully, (2) avoid repeating the same failing command unchanged, (3) narrow the failure (smaller repro, paths, permissions, dependencies), (4) fix and re-verify.
 - Favor tool outputs over long narration; be concise and decision-oriented.
@@ -742,8 +740,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 ## Images and media
 
 - When the task references an image on disk, use view_image (or read_image if available) so the model can see it. For large or raw-format images (e.g. PPM/PGM), the tool may downscale or convert; retry with smaller max_dim/max_bytes if needed.
-- Use image_info for dimensions and format; use crop_image to focus on a region and reduce tokens. For precise numeric evidence without attaching the whole image, use sample_image_pixels. Use image_similarity to quantify progress and image_diff to see where two images differ.
-- For image reconstruction or reverse-engineering tasks: use image_similarity (e.g. max_dim=128) as a fast inner-loop score; reserve full-resolution comparison for the end.
+- Use crop_image to focus on a region and reduce tokens.
 
 ## Artifacts and long-running programs
 

@@ -211,7 +211,9 @@ class ToolRegistry:
             elif name == "wait_for_file":
                 result = self._execute_wait_for_file(arguments)
             elif name == "run_until_file":
-                result = self._execute_run_until_file(cwd, arguments)            
+                result = self._execute_run_until_file(cwd, arguments)     
+            elif name == "image_info":
+                result = self._execute_image_info(cwd, arguments)       
             elif name == "crop_image":
                 result = self._execute_crop_image(cwd, arguments)
             else:
@@ -768,6 +770,34 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             terminate_grace_sec=float(args.get("terminate_grace_sec", 2.0)),
         )
 
+
+    def _execute_image_info(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Return basic metadata about an image file."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: image_info(path: str)")
+        from src.tools.media_extra import run_image_info
+        return run_image_info(cwd, path=path)
+
+    def _execute_crop_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Crop an image to a rectangle."""
+        path = args.get("path", "")
+        x = args.get("x")
+        y = args.get("y")
+        width = args.get("width")
+        height = args.get("height")
+        if path is None or x is None or y is None or width is None or height is None:
+            return ToolResult.invalid("Missing required parameters path, x, y, width, height. Usage: crop_image(path, x, y, width, height, ...)")
+        from src.tools.media_extra import run_crop_image
+        return run_crop_image(
+            cwd,
+            path=path,
+            x=int(x),
+            y=int(y),
+            width=int(width),
+            height=int(height),
+            max_bytes=int(args.get("max_bytes", 300000)),
+        )
     # -------------------------------------------------------------------------
     # Caching methods
     # -------------------------------------------------------------------------

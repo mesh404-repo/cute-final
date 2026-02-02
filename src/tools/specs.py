@@ -407,6 +407,19 @@ CROP_IMAGE_SPEC: dict[str, Any] = {
     },
 }
 
+# Image info tool
+IMAGE_INFO_SPEC: dict[str, Any] = {
+    "name": "image_info",
+    "description": "Return basic metadata about an image file (format, width, height, file size). Uses identify when available.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Image file path."},
+        },
+        "required": ["path"],
+    },
+}
+
 # All tool specs
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "shell_command": SHELL_COMMAND_SPEC,
@@ -424,7 +437,8 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "wait_for_port": WAIT_FOR_PORT_SPEC,
     "wait_for_file": WAIT_FOR_FILE_SPEC,
     "run_until_file": RUN_UNTIL_FILE_SPEC,
-    "crop_image": CROP_IMAGE_SPEC,
+    "image_info": IMAGE_INFO_SPEC,
+    "crop_image": CROP_IMAGE_SPEC,    
 }
 
 

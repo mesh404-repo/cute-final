@@ -740,7 +740,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 ## Images and media
 
 - When the task references an image on disk, use view_image so the model can see it. For large or raw-format images (e.g. PPM/PGM), the tool may downscale or convert; retry with smaller max_dim/max_bytes if needed.
-- Use crop_image to focus on a region and reduce tokens.
+- Use image_info for dimensions and format; use crop_image to focus on a region and reduce tokens.
 
 ## Artifacts and long-running programs
 

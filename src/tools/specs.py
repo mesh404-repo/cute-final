@@ -394,7 +394,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "write_file": WRITE_FILE_SPEC,
     "list_dir": LIST_DIR_SPEC,
     "grep_files": GREP_FILES_SPEC,
-    "apply_patch": APPLY_PATCH_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,

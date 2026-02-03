@@ -812,23 +812,6 @@ The example was generated from different input data. Your output WILL have diffe
 
 **When values differ from example:** That's expected. Stop. Do not adjust. Move on. Do not add offsets, base addresses, or any transformations to match example values.
 
-## Workspace Cleanup (GC)
-
-Before marking a task complete, clean up any artifacts that could interfere with verification or leave the workspace in a messy state:
-
-- **Generated artifacts**: Remove compiled files, build outputs, and cache directories that you created during the task (e.g., `__pycache__`, `.pyc`, `node_modules` if you installed them, `dist/`, `build/`, `*.egg-info`).
-- **Temporary files**: Delete any temporary files, logs, or scratch files you created for debugging or testing (e.g., `*.tmp`, `*.log`, test scripts you added).
-- **Intermediate outputs**: Clean up any intermediate files from multi-step processes that aren't part of the final deliverable.
-
-**Guidelines:**
-- Only remove artifacts YOU created during this task, never pre-existing files.
-- If unsure whether a file existed before, leave it alone.
-- Keep files that are explicitly required by the task or verification.
-- Use `rm -rf` cautiously and only on directories you created.
-- When in doubt, list files before removing: `ls -la` first, then targeted removal.
-
-This ensures the workspace remains clean for verification tests and doesn't contain artifacts that could cause false positives or negatives.
-
 ## Ambition vs. precision
 
 For tasks that have no prior context (i.e. the user is starting something brand new), you should feel free to be ambitious and demonstrate creativity with your implementation.

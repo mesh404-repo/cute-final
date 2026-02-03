@@ -1,6 +1,65 @@
-# BaseAgent - SDK 3.0
+<p align="center">
+  <h1 align="center">BaseAgent</h1>
+  <p align="center"><strong>High-performance autonomous agent for <a href="https://term.challenge">Term Challenge</a></strong></p>
+  <p align="center">Fully autonomous with <strong>Chutes API</strong> - powered by <strong>moonshotai/Kimi-K2.5-TEE</strong> (1T params, 32B activated, 256K context)</p>
+</p>
 
-High-performance autonomous agent for [Term Challenge](https://term.challenge). **Does NOT use term_sdk** - fully autonomous with litellm.
+---
+
+## Architecture at a Glance
+
+```mermaid
+graph TB
+    subgraph Basilica["Basilica TEE Container"]
+        subgraph TermChallenge["Term Challenge Agent"]
+            CLI["agent.py"]
+            
+            subgraph Core["Core Engine"]
+                Loop["Agent Loop"]
+                Context["Context Manager"]
+                Cache["Prompt Cache"]
+            end
+            
+            subgraph Tools["Tool System"]
+                Registry["Tool Registry"]
+                Shell["shell_command"]
+                Files["read_file / write_file"]
+                Search["grep_files / list_dir"]
+            end
+        end
+    end
+    
+    subgraph LLM["LLM Layer (External)"]
+        Client["Chutes API Client"]
+        Model["moonshotai/Kimi-K2.5-TEE"]
+    end
+    
+    CLI --> Loop
+    Loop --> Context
+    Loop --> Cache
+    Loop --> Client
+    Client --> Model
+    Loop --> Registry
+    Registry --> Shell
+    Registry --> Files
+    Registry --> Search
+    
+    style Basilica fill:#1a1a2e,color:#fff
+    style TermChallenge fill:#16213e,color:#fff
+```
+
+---
+
+## Key Features
+
+- **Fully Autonomous** - No user confirmation required; makes decisions independently
+- **LLM-Driven** - All decisions made by the language model, not hardcoded logic
+- **Prompt Caching** - 90%+ cache hit rate for significant cost reduction
+- **Context Management** - Intelligent pruning and compaction for long tasks
+- **Self-Verification** - Automatic validation before task completion
+- **Kimi K2.5-TEE** - 1T parameters, 256K context window, thinking mode enabled
+
+---
 
 ## Installation
 
@@ -15,122 +74,232 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
+export CHUTES_API_KEY="your-token"
 python agent.py --instruction "Your task here..."
 ```
 
-The agent receives the instruction via `--instruction` and executes the task autonomously.
+---
 
-## Mandatory Architecture
-
-> **IMPORTANT**: Agents MUST follow these rules to work correctly.
-
-### 1. Project Structure (MANDATORY)
-
-Agents **MUST** be structured projects, NOT single files:
+## Project Structure
 
 ```
-my-agent/
-├── agent.py              # Entry point with --instruction
-├── src/                  # Modules
+baseagent/
+├── agent.py                 # Entry point
+├── src/
 │   ├── core/
-│   │   ├── loop.py       # Main loop
-│   │   └── compaction.py # Context management (MANDATORY)
+│   │   ├── loop.py          # Main agent loop
+│   │   └── compaction.py    # Context management
 │   ├── llm/
-│   │   └── client.py     # LLM client (litellm)
-│   └── tools/
-│       └── ...           # Available tools
-├── requirements.txt      # Dependencies
-└── pyproject.toml        # Project config
+│   │   └── client.py        # LLM client (Chutes API)
+│   ├── config/
+│   │   └── defaults.py      # Configuration
+│   ├── tools/               # Tool implementations
+│   ├── prompts/
+│   │   └── system.py        # System prompt
+│   └── output/
+│       └── jsonl.py         # JSONL event emission
+├── rules/                   # Development guidelines
+├── astuces/                 # Implementation techniques
+└── docs/                    # Full documentation
 ```
 
-### 2. Session Management (MANDATORY)
+---
 
-Agents **MUST** maintain complete conversation history:
+## Agent Loop Workflow
 
-```python
-messages = [
-    {"role": "system", "content": system_prompt},
-    {"role": "user", "content": instruction},
-]
-
-# Add each exchange
-messages.append({"role": "assistant", "content": response})
-messages.append({"role": "tool", "tool_call_id": id, "content": result})
+```mermaid
+flowchart TB
+    Start([Start]) --> Init[Initialize Session]
+    Init --> BuildMsg[Build Initial Messages]
+    BuildMsg --> GetState[Get Terminal State]
+    
+    GetState --> LoopStart{Iteration < Max?}
+    
+    LoopStart -->|Yes| ManageCtx[Manage Context<br/>Prune/Compact if needed]
+    ManageCtx --> ApplyCache[Apply Prompt Caching]
+    ApplyCache --> CallLLM[Call Kimi K2.5-TEE]
+    
+    CallLLM --> HasCalls{Has Tool Calls?}
+    
+    HasCalls -->|Yes| ExecTools[Execute Tool Calls]
+    ExecTools --> AddResults[Add Results to Messages]
+    AddResults --> LoopStart
+    
+    HasCalls -->|No| CheckPending{pending_completion?}
+    
+    CheckPending -->|No| SetPending[Set pending_completion = true]
+    SetPending --> InjectVerify[Inject Verification Prompt]
+    InjectVerify --> LoopStart
+    
+    CheckPending -->|Yes| Complete[Task Complete]
+    
+    LoopStart -->|No| Timeout[Max Iterations Reached]
+    
+    Complete --> End([End])
+    Timeout --> End
 ```
 
-### 3. Context Compaction (MANDATORY)
+---
 
-Compaction is **CRITICAL** for:
-- Avoiding "context too long" errors
-- Preserving critical information
-- Enabling complex multi-step tasks
-- Improving response coherence
+## Available Tools
 
-```python
-# Recommended threshold: 85% of context window
-AUTO_COMPACT_THRESHOLD = 0.85
-
-# 2-step strategy:
-# 1. Pruning: Remove old tool outputs
-# 2. AI Compaction: Summarize conversation if pruning insufficient
+```mermaid
+flowchart LR
+    subgraph ToolRegistry["Tool Registry"]
+        direction TB
+        
+        subgraph FileOps["File Operations"]
+            read["read_file<br/>Read with pagination"]
+            write["write_file<br/>Create/overwrite files"]
+            patch["apply_patch<br/>Apply unified diffs"]
+        end
+        
+        subgraph Search["Search & Navigation"]
+            grep["grep_files<br/>Ripgrep search"]
+            list["list_dir<br/>Directory listing"]
+            search["search_files<br/>Glob patterns"]
+        end
+        
+        subgraph Execution["Execution"]
+            shell["shell_command<br/>Run shell commands"]
+        end
+        
+        subgraph Media["Media"]
+            image["view_image<br/>Analyze images"]
+        end
+    end
+    
+    Agent[Agent Loop] --> ToolRegistry
+    ToolRegistry --> Results[Tool Results]
+    Results --> Agent
 ```
 
-## Features
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `shell_command` | Execute shell commands | `command`, `timeout_ms` |
+| `read_file` | Read files with pagination | `file_path`, `offset`, `limit` |
+| `write_file` | Create/overwrite files | `file_path`, `content` |
+| `apply_patch` | Apply unified diff patches | `patch` |
+| `grep_files` | Search with ripgrep | `pattern`, `path`, `include` |
+| `list_dir` | List directory contents | `path`, `recursive`, `depth` |
+| `search_files` | Search files by glob pattern | `pattern`, `path` |
+| `view_image` | Analyze image files | `file_path` |
 
-### LLM Client (litellm)
+---
+
+## Tool Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant Agent as Agent Loop
+    participant Registry as Tool Registry
+    participant Tool as Tool Implementation
+    participant FS as File System
+
+    Agent->>Registry: execute(tool_name, args)
+    Registry->>Registry: Validate arguments
+    Registry->>Registry: Check cache
+    
+    alt Cache Hit
+        Registry-->>Agent: Cached ToolResult
+    else Cache Miss
+        Registry->>Tool: execute(**args)
+        Tool->>FS: Perform operation
+        FS-->>Tool: Result
+        Tool-->>Registry: ToolResult
+        Registry->>Registry: Cache result
+        Registry-->>Agent: ToolResult
+    end
+```
+
+---
+
+## LLM Client (Chutes API)
 
 ```python
-from src.llm.client import LiteLLMClient
+from src.llm.client import LLMClient
 
-llm = LiteLLMClient(
-    model="openrouter/anthropic/claude-opus-4.5",
-    temperature=0.0,
+llm = LLMClient(
+    model="moonshotai/Kimi-K2.5-TEE",
+    temperature=1.0,  # Recommended for thinking mode
     max_tokens=16384,
 )
 
 response = llm.chat(messages, tools=tool_specs)
 ```
 
-### Prompt Caching
+### Thinking Mode
 
-Caches system and recent messages to reduce costs:
-- Cache hit rate: **90%+** on long conversations
-- Significant API cost reduction
+Kimi K2.5-TEE supports thinking mode with `<think>...</think>` tags:
 
-### Self-Verification
+```mermaid
+sequenceDiagram
+    participant User
+    participant Model as Kimi K2.5-TEE
+    participant Response
 
-Before completing, the agent automatically:
-1. Re-reads the original instruction
-2. Verifies each requirement
-3. Only confirms completion if everything is validated
+    User->>Model: Complex task instruction
+    
+    rect rgb(230, 240, 255)
+        Note over Model: Thinking Mode Active
+        Model->>Model: Analyze problem
+        Model->>Model: Consider approaches
+        Model->>Model: Evaluate options
+    end
+    
+    Model->>Response: <think>Reasoning process...</think>
+    Model->>Response: Final answer/action
+```
 
-### Context Management
+---
 
-- **Token-based overflow detection** (not message count)
-- **Tool output pruning** (removes old outputs)
-- **AI compaction** (summarizes if needed)
-- **Middle-out truncation** for large outputs
+## Context Management
 
-## Available Tools
+```mermaid
+flowchart LR
+    subgraph Input
+        Msgs[Messages<br/>~150K tokens]
+    end
+    
+    subgraph Detection
+        Est[Estimate Tokens]
+        Check{> 85% of<br/>context?}
+    end
+    
+    subgraph Pruning
+        Scan[Scan backwards]
+        Protect[Protect last 40K<br/>tool tokens]
+        Clear[Clear old outputs]
+    end
+    
+    subgraph Compaction
+        CheckAgain{Still > 85%?}
+        Summarize[AI Summarization]
+    end
+    
+    subgraph Output
+        Result[Managed Messages]
+    end
+    
+    Msgs --> Est --> Check
+    Check -->|No| Result
+    Check -->|Yes| Scan --> Protect --> Clear
+    Clear --> CheckAgain
+    CheckAgain -->|No| Result
+    CheckAgain -->|Yes| Summarize --> Result
+```
 
-| Tool | Description |
-|------|-------------|
-| `shell_command` | Execute shell commands |
-| `read_file` | Read files with pagination |
-| `write_file` | Create/overwrite files |
-| `apply_patch` | Apply patches |
-| `grep_files` | Search with ripgrep |
-| `list_dir` | List directories |
-| `view_image` | Analyze images |
+---
 
 ## Configuration
 
-See `src/config/defaults.py`:
-
 ```python
+# src/config/defaults.py
 CONFIG = {
-    "model": "openrouter/anthropic/claude-opus-4.5",
+    "model": "moonshotai/Kimi-K2.5-TEE",
+    "provider": "chutes",
     "max_tokens": 16384,
+    "temperature": 1.0,
     "max_iterations": 200,
     "auto_compact_threshold": 0.85,
     "prune_protect": 40_000,
@@ -138,31 +307,45 @@ CONFIG = {
 }
 ```
 
-## Environment Variables
-
 | Variable | Description |
 |----------|-------------|
-| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `CHUTES_API_KEY` | Chutes API key |
+| `LLM_MODEL` | Model override (default: `moonshotai/Kimi-K2.5-TEE`) |
+
+---
 
 ## Documentation
 
-### Rules - Development Guidelines
+See [docs/](docs/) for comprehensive documentation:
 
-See [rules/](rules/) for comprehensive guides:
+- [Overview](docs/overview.md) - Design principles
+- [Architecture](docs/architecture.md) - Technical deep-dive
+- [Chutes Integration](docs/chutes-integration.md) - API setup
+- [Tools Reference](docs/tools.md) - All tools documented
+- [Context Management](docs/context-management.md) - Token optimization
+- [Best Practices](docs/best-practices.md) - Performance tips
 
-- [Architecture Patterns](rules/02-architecture-patterns.md) - **Mandatory project structure**
-- [LLM Usage Guide](rules/06-llm-usage-guide.md) - **Using litellm**
-- [Best Practices](rules/05-best-practices.md)
-- [Error Handling](rules/08-error-handling.md)
+See [rules/](rules/) for development guidelines.
 
-### Tips - Practical Techniques
+---
 
-See [astuces/](astuces/) for techniques:
+## Related Projects
 
-- [Prompt Caching](astuces/01-prompt-caching.md)
-- [Context Management](astuces/03-context-management.md)
-- [Local Testing](astuces/09-local-testing.md)
+| Project | Description |
+|---------|-------------|
+| [Basilica](https://github.com/one-covenant/basilica) | Secure TEE Container Runtime |
+| [Chutes Project](https://github.com/chutesai/chutes) | Chutes AI - LLM API Provider |
+| [Platform Project](https://github.com/PlatformNetwork/platform) | Platform Network Core |
+| [How to Mine with this Agent](https://www.platform.network/docs) | Mining Documentation |
+
+---
 
 ## License
 
 MIT License - see [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  <strong>BaseAgent</strong>
+</p>

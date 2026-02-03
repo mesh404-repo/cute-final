@@ -94,6 +94,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
+- If the task requires running async tasks with a concurrency limit and that cleanup (e.g. `finally`) runs on keyboard interrupt: verify that there are **more tasks than concurrent slots**. Run with more tasks than the limit allows running at once, send SIGINT after a short delay (e.g. subprocess that sends SIGINT to the process running your code), and confirm that exactly as many tasks as the limit allows started and exactly that many ran cleanup. Run your solution under a small script that sends SIGINT and inspect stdout/stderr for start and cleanup counts.
 
 ### 6. Workspace Cleanup (GC)
 Before completing, clean up any artifacts YOU created that are not part of the deliverable:

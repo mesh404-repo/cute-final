@@ -451,6 +451,7 @@ def run_agent_loop(
             assistant_msg["tool_calls"] = tool_calls_data
         
         messages.append(assistant_msg)
+        _log(f"assistant_msg: {assistant_msg}")
 
         # Execute each tool call and collect results
         # We must add ALL tool results before any other messages (Anthropic API requirement)
@@ -463,7 +464,6 @@ def run_agent_loop(
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"tool name: {tool_name}")
-            _log(f"tool args: {tool_args}")
             
             # Emit item.started
             item_id = next_item_id()

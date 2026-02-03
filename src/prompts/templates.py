@@ -95,15 +95,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
 
-### 6. Workspace Cleanup (GC)
-Before completing, clean up any artifacts YOU created that are not part of the deliverable:
-- Remove compiled/cache files: `rm -rf __pycache__ *.pyc .pytest_cache` (if you created them)
-- Remove build outputs: `rm -rf dist build *.egg-info node_modules` (if you installed/built them)
-- Remove temp files: `rm -f *.tmp *.log` (any scratch files you created for testing)
-- Keep ONLY files required by the task - remove intermediate or debug artifacts
-- NEVER remove pre-existing files - only clean up what you created during this task
-
-### 7. Final Decision
+### 6. Final Decision
 After completing the above verification:
 - If EVERYTHING is verified and correct (including ALL critical constraints): Summarize what was done and confirm completion
 - If ANY constraint is violated or ANYTHING is missing or broken: Fix it now using the appropriate tools

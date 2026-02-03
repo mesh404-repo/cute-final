@@ -454,7 +454,6 @@ def run_agent_loop(
             assistant_msg["tool_calls"] = tool_calls_data
         
         messages.append(assistant_msg)
-        _log(f"assistant msg: {assistant_msg}")
 
         # Execute each tool call and collect results
         # We must add ALL tool results before any other messages (Anthropic API requirement)

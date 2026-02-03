@@ -621,6 +621,16 @@ When the task involves extracting text or shapes from structured geometric data 
 - **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use `view_image` to interpret the result. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
 - If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and viewing it with `view_image` rather than iterating on the same approach.
 
+**Transcribing from images:** When writing an exact string read from an image, watch for visually similar characters (e.g. letter i vs digit 1, O vs 0) and verify the output character-for-character before writing.
+
+### Answers derived from visual or complex input
+
+When the required deliverable is an answer or decision that must be **derived** from visual or complex input (e.g. an image, diagram, or structured data):
+
+- **Do not guess after a single observation.** One view or one read is not enough to output a final answer. Use a methodical pipeline: (1) observe/ingest the input, (2) extract or reconstruct structured data via code or systematic inspection, (3) use a solver, engine, or reference when the domain has one to compute or verify the result, (4) write the result only after you have computed or verified it.
+- **Prefer computation over intuition.** When the domain has standard tools (engines, solvers, libraries), use them to determine the answer; install or run them if needed. Do not rely on a single visual or textual read alone for the final output.
+- **Do not declare the task complete** until the deliverable comes from this pipeline. If you have only viewed or read the input once and have not run any script or tool to compute the result, continue with tool calls to extract state and compute the result before writing the final output.
+
 ### Best practices
 
 Follow language-specific best practices in your implementations:

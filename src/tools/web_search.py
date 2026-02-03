@@ -35,7 +35,7 @@ def web_search(
     query: str,
     num_results: int = 5,
     search_type: str = "general",
-    provider: str = "serper",
+    provider: str = "firecrawl",
 ) -> ToolResult:
     """Search the web for information using Firecrawl or Serper API.
     

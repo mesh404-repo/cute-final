@@ -17,6 +17,7 @@ Context management strategy (like OpenCode/Codex):
 
 from __future__ import annotations
 
+import sys
 import json
 import copy
 import time

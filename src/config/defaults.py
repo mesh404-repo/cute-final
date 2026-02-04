@@ -25,10 +25,10 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Model to use via OpenRouter (prefix with openrouter/ for litellm)
-    "model": "openrouter/openai/gpt-5.2",
+    "model": "chutes/moonshotai/Kimi-K2.5-TEE",
     
     # Provider
-    "provider": "openrouter",
+    "provider": "chutes",
     
     # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
     "reasoning_effort": "high",

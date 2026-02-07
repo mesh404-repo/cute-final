@@ -100,7 +100,7 @@ class AgentConfig(BaseModel):
     
     # Model settings
     model: str = Field(
-        default="openrouter/anthropic/claude-opus-4.5",
+        default="openrouter/openai/gpt-5.2-codex",
         description="Model to use"
     )
     provider: Provider = Field(

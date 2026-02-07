@@ -31,7 +31,7 @@ CONFIG: Dict[str, Any] = {
     "provider": "openrouter",
     
     # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
-    "reasoning_effort": "high",
+    "reasoning_effort": "xhigh",
     
     # Token limits
     "max_tokens": 16384,
@@ -77,7 +77,7 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Enable prompt caching
-    "cache_enabled": True,
+    "cache_enabled": False,
     
     # OpenAI (gpt-5.1-codex-max) caching configuration:
     # - Caching is AUTOMATIC for OpenAI models (no markers needed)

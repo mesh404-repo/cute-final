@@ -100,11 +100,11 @@ class AgentConfig(BaseModel):
     
     # Model settings
     model: str = Field(
-        default="openrouter/openai/gpt-5.2-codex",
-        description="Model to use"
+        default="openai/gpt-5.2-codex",
+        description="Model to use (litellm format: openai/model-name)"
     )
     provider: Provider = Field(
-        default=Provider.OPENROUTER,
+        default=Provider.OPENAI,
         description="LLM provider"
     )
     max_iterations: int = Field(default=50, description="Maximum iterations")

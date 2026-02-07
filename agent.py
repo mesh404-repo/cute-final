@@ -133,7 +133,7 @@ def main():
     _log("=" * 60)
     _log("SuperAgent Starting (SDK 3.0 - litellm)")
     _log("=" * 60)
-    _log(f"Model: openrouter/openai/gpt-5.2-codex")
+    _log(f"Model: {CONFIG['model']}")
     _log(f"Instruction: {args.instruction[:200]}...")
     _log("-" * 60)
     

@@ -9,8 +9,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-os.environ["OPENROUTER_API_KEY"] = ""
-os.environ["OPENAI_API_KEY"] = ""
 
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""
@@ -108,8 +106,8 @@ class LiteLLMClient:
     def _supports_temperature(self, model: str) -> bool:
         """Check if model supports temperature parameter."""
         model_lower = model.lower()
-        # Reasoning models don't support temperature
-        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1"]):
+        # Reasoning / codex models don't support temperature
+        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1", "codex"]):
             return False
         return True
     

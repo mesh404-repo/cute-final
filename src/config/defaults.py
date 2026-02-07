@@ -25,10 +25,10 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     
     # Model to use via litellm (format: openai/model-name for OpenAI API)
-    "model": "openai/gpt-5.2-codex",
+    "model": "openrouter/openai/gpt-5.2-codex",
     
     # Provider (openai = use OPENAI_API_KEY)
-    "provider": "openai",
+    "provider": "openrouter",
     
     # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
     "reasoning_effort": "xhigh",

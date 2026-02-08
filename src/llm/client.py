@@ -242,7 +242,7 @@ class OpenRouterClient:
         }
 
         # Cost if OpenRouter returns it
-        result.cost = float(data.get("usage", {}).get("total_cost", 0) or 0)
+        result.cost = float(data.get("usage", {}).get("cost", 0) or 0)
         self._total_cost += result.cost
         self._request_count += 1
 

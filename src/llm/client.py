@@ -126,9 +126,9 @@ class OpenRouterClient:
         self._cached_tokens = 0
 
     def _supports_temperature(self, model: str) -> bool:
-        """Reasoning/codex models often use fixed temperature; omit for codex."""
+        """Reasoning/codex models often use fixed temperature"""
         model_lower = model.lower()
-        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1", "codex"]):
+        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1"]):
             return False
         return True
 

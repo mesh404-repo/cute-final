@@ -1,5 +1,19 @@
 """LLM module using litellm."""
 
-from .client import LiteLLMClient, LLMResponse, FunctionCall, CostLimitExceeded, LLMError
+from .client import (
+    OpenRouterClient,
+    LiteLLMClient,
+    LLMResponse,
+    FunctionCall,
+    CostLimitExceeded,
+    LLMError,
+)
 
-__all__ = ["LiteLLMClient", "LLMResponse", "FunctionCall", "CostLimitExceeded", "LLMError"]
+__all__ = [
+    "OpenRouterClient",
+    "LiteLLMClient",
+    "LLMResponse",
+    "FunctionCall",
+    "CostLimitExceeded",
+    "LLMError",
+]

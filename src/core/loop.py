@@ -56,7 +56,7 @@ from src.core.compaction import (
 )
 
 if TYPE_CHECKING:
-    from src.llm.client import LiteLLMClient
+    from src.llm.client import OpenRouterClient
     from src.tools.registry import ToolRegistry
 
 
@@ -64,6 +64,20 @@ def _log(msg: str) -> None:
     """Log to stderr."""
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
+
+
+def _assistant_message(
+    response: Any,
+    content: str,
+    tool_calls_data: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Build assistant message dict, preserving reasoning_details for OpenRouter reasoning models."""
+    msg: Dict[str, Any] = {"role": "assistant", "content": content}
+    if getattr(response, "reasoning_details", None):
+        msg["reasoning_details"] = response.reasoning_details
+    if tool_calls_data:
+        msg["tool_calls"] = tool_calls_data
+    return msg
 
 
 def _add_cache_control_to_message(
@@ -175,7 +189,7 @@ def _apply_caching(
 
 
 def run_agent_loop(
-    llm: "LiteLLMClient",
+    llm: "OpenRouterClient",
     tools: "ToolRegistry",
     ctx: Any,
     config: Dict[str, Any],
@@ -395,7 +409,7 @@ def run_agent_loop(
 
                 if "task incomplete" in response_text.lower():
                     verification_phase = None
-                    messages.append({"role": "assistant", "content": response_text})
+                    messages.append(_assistant_message(response, response_text))
                     messages.append({
                         "role": "user",
                         "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
@@ -408,7 +422,7 @@ def run_agent_loop(
                 # First verification round just completed – store result, request confirmation
                 verification_result = response_text
                 verification_phase = "confirmation"
-                messages.append({"role": "assistant", "content": response_text})
+                messages.append(_assistant_message(response, response_text))
 
                 confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
                     instruction=ctx.instruction,
@@ -423,7 +437,7 @@ def run_agent_loop(
 
             # No verification yet – request first self-verification
             verification_phase = "first"
-            messages.append({"role": "assistant", "content": response_text})
+            messages.append(_assistant_message(response, response_text))
 
             verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
                 instruction=ctx.instruction
@@ -435,10 +449,7 @@ def run_agent_loop(
             _log("Requesting self-verification before completion")
             continue        
         
-        # Add assistant message with tool calls
-        assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
-        
-        # Build tool_calls for message history
+        # Add assistant message with tool calls (and reasoning_details if present)
         tool_calls_data = []
         for call in response.function_calls:
             tool_calls_data.append({
@@ -449,11 +460,7 @@ def run_agent_loop(
                     "arguments": json.dumps(call.arguments) if isinstance(call.arguments, dict) else call.arguments,
                 },
             })
-        
-        if tool_calls_data:
-            assistant_msg["tool_calls"] = tool_calls_data
-        
-        messages.append(assistant_msg)
+        messages.append(_assistant_message(response, response_text, tool_calls_data))
 
         # Execute each tool call and collect results
         # We must add ALL tool results before any other messages (Anthropic API requirement)

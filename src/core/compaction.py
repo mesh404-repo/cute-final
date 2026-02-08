@@ -16,7 +16,7 @@ import time
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.llm.client import LiteLLMClient
+    from src.llm.client import OpenRouterClient
 
 # =============================================================================
 # Constants (matching OpenCode)
@@ -484,7 +484,7 @@ def _remove_orphaned_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[
 
 
 def run_compaction(
-    llm: "LiteLLMClient",
+    llm: "OpenRouterClient",
     messages: List[Dict[str, Any]],
     system_prompt: str,
     model: Optional[str] = None,
@@ -597,7 +597,7 @@ def run_compaction(
 def manage_context(
     messages: List[Dict[str, Any]],
     system_prompt: str,
-    llm: "LiteLLMClient",
+    llm: "OpenRouterClient",
     force_compaction: bool = False,
 ) -> List[Dict[str, Any]]:
     """

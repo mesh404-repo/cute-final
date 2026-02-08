@@ -24,8 +24,8 @@ CONFIG: Dict[str, Any] = {
     # Model Settings (simulates --model gpt-5.2 -c model_reasoning_effort=xhigh)
     # ==========================================================================
     
-    # Model via OpenRouter + litellm (format: openrouter/provider/model-name)
-    "model": "openrouter/openai/gpt-5.2-codex",
+    # Model via OpenRouter (direct API, no litellm). Use openai/gpt-5.2-codex for OpenRouter.
+    "model": "openai/gpt-5.2-codex",
     
     # Provider (openrouter = use OPENROUTER_API_KEY)
     "provider": "openrouter",

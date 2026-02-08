@@ -48,7 +48,7 @@ from src.config.defaults import CONFIG
 from src.core.loop import run_agent_loop
 from src.tools.registry import ToolRegistry
 from src.output.jsonl import emit, ErrorEvent
-from src.llm.client import LiteLLMClient, CostLimitExceeded
+from src.llm.client import OpenRouterClient, CostLimitExceeded
 
 
 class AgentContext:
@@ -131,7 +131,7 @@ def main():
     args = parser.parse_args()
     
     _log("=" * 60)
-    _log("SuperAgent Starting (SDK 3.0 - litellm)")
+    _log("SuperAgent Starting (SDK 3.0 - OpenRouter)")
     _log("=" * 60)
     _log(f"Model: {CONFIG['model']}")
     _log(f"Instruction: {args.instruction[:200]}...")
@@ -140,15 +140,12 @@ def main():
     # Initialize components
     start_time = time.time()
     
-    llm = LiteLLMClient(
+    llm = OpenRouterClient(
         model=CONFIG["model"],
         temperature=CONFIG.get("temperature"),
         max_tokens=CONFIG.get("max_tokens", 16384),
         cost_limit=CONFIG.get("cost_limit", 100.0),
         timeout=CONFIG.get("llm_timeout", 180.0),
-        # OpenAI caching options (for gpt-5.1-codex-max)
-        cache_extended_retention=CONFIG.get("cache_extended_retention", True),
-        cache_key=CONFIG.get("cache_key"),
     )
     
     tools = ToolRegistry()

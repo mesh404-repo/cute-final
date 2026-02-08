@@ -397,7 +397,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "grep_files": GREP_FILES_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
-    "web_search": WEB_SEARCH_SPEC,
     "transcript": TRANSCRIPT_SPEC,
     "spawn_process": SPAWN_PROCESS_SPEC,
     "kill_process": KILL_PROCESS_SPEC,

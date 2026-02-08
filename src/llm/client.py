@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 os.environ["OPENROUTER_API_KEY"] = ""
-os.environ["OPENAI_API_KEY"] = ""
 
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""
@@ -161,10 +160,10 @@ class LiteLLMClient:
             kwargs["tools"] = self._build_tools(tools)
             kwargs["tool_choice"] = "auto"
         
-        # Add extra body params (like reasoning effort)
+        # OpenRouter (and some providers) require extra params in extra_body so they
+        # are sent in the request body (e.g. reasoning.effort for gpt-5.2-codex).
         if extra_body:
-            kwargs.update(extra_body)
-        
+            kwargs["extra_body"] = extra_body
         kwargs["timeout"] = self.timeout
         
         try:

@@ -346,11 +346,12 @@ def run_agent_loop(
                         raise
                     
                     if "BadRequestError" in error_msg:
-                        _log("BadRequestError")
-                        
+                        _log("BadRequestError")                        
                         messages = copy.deepcopy(prev_messages)
                         cached_messages = _apply_caching(messages, enabled=cache_enabled)
-                    else:
+                    
+                    # Switch model every 2 steps (on 2nd, 4th, ... error) instead of every step
+                    if attempt % 2 == 0:
                         model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
                         main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
                         _log(f"Switching to model: {main_model}")

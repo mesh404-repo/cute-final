@@ -883,15 +883,19 @@ You can and should make multiple tool calls in a single turn when the tools have
    - `grep_files` to find files + `read_file` on multiple matching files
    - Example: Search for "TODO" comments and read all files containing them
 
-3. **File creation and testing**:
+3. **Video analysis workflow**:
+   - `extract_video_frames` or `extract_keyframes` + `analyze_image` on multiple frames
+   - Extract frames and analyze several keyframes simultaneously
+
+4. **File creation and testing**:
    - `write_file` to create a script + `shell_command` to execute it
    - Example: Create a test script and run it immediately
 
-4. **Information gathering**:
+5. **Information gathering**:
    - `read_file` + `grep_files` (read a file and search for related patterns in codebase)
    - `list_dir` + `grep_files` (explore directory and search for patterns)
 
-5. **Documentation and code**:
+6. **Documentation and code**:
    - `read_file` on README + `read_file` on main code file
    - `web_search` for documentation + `read_file` on related code
 

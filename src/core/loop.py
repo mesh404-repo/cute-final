@@ -50,6 +50,16 @@ from src.prompts.templates import (
 )
 from src.utils.truncate import middle_out_truncate
 
+GLM_4_6_TEE = "zai-org/GLM-4.6-TEE"
+GLM_4_7_TEE = "zai-org/GLM-4.7-TEE"
+KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
+
+REASING_MODELS = [
+    GLM_4_6_TEE,
+    GLM_4_7_TEE,
+    KIMI_2_5_TEE,
+]
+
 if TYPE_CHECKING:
     from src.llm.client import LLMClient
     from src.tools.registry import ToolRegistry
@@ -251,6 +261,8 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
+    main_model = GLM_4_6_TEE
+
     while iteration < max_iterations:
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
@@ -265,6 +277,7 @@ def run_agent_loop(
                 messages=messages,
                 system_prompt=system_prompt,
                 llm=llm,
+                model=main_model,
             )
 
             # If compaction happened, update our messages reference
@@ -299,6 +312,7 @@ def run_agent_loop(
                         cached_messages,
                         tools=tool_specs,
                         max_tokens=config.get("max_tokens", 16384),
+                        model=main_model,
                         extra_body=extra_body if extra_body else None,
                     )
                     
@@ -335,6 +349,10 @@ def run_agent_loop(
                         
                         messages = copy.deepcopy(prev_messages)
                         cached_messages = _apply_caching(messages, enabled=cache_enabled)
+                    else:
+                        model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
+                        main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
+                        _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
                         wait_time = 2 * attempt  # 10s, 20s, 30s, 40s

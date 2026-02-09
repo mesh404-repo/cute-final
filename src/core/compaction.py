@@ -606,6 +606,7 @@ def manage_context(
     system_prompt: str,
     llm: "LLMClient",
     force_compaction: bool = False,
+    model: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Main context management function.
@@ -655,7 +656,7 @@ def manage_context(
 
     # Step 2: Run AI compaction
     _log(f"Pruning insufficient ({pruned_tokens} tokens), running AI compaction...")
-    compacted = run_compaction(llm, pruned, system_prompt)
+    compacted = run_compaction(llm, pruned, system_prompt, model=model)
     compacted_tokens = estimate_total_tokens(compacted)
 
     _log(f"Compaction result: {total_tokens} -> {compacted_tokens} tokens")

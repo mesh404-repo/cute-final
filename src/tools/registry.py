@@ -579,29 +579,22 @@ Partial output before timeout:
         return ToolResult.ok("\n".join(lines))    
     
     def _execute_transcript(self, args: dict[str, Any]) -> ToolResult:
-        """Analyze video using Gemini 3 Pro Preview via OpenRouter with direct URL support."""
-        import httpx
-        
+        """Analyze video using Kimi K2.5 TEE via Chutes (LLMClient)."""
+        from src.llm.client import LLMClient, LLMError
+
         video_url = args.get("url", "")
         instruction = args.get("instruction", "")
-        
+
         if not video_url:
-            return ToolResult.invalid(
-                "No URL provided"
-            )
-        
+            return ToolResult.invalid("No URL provided")
+
         if not instruction:
             return ToolResult.invalid(
                 "No instruction provided. You must specify what you want to extract from the video."
             )
-        
-        OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-        
-        try:
-            # Send directly to Gemini 3 Pro via OpenRouter with video_url
-            # OpenRouter supports direct YouTube/video URLs without downloading
-            # Enhanced prompt for better accuracy and completeness
-            enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
+
+        model = os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE")
+        enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
 
 {instruction}
 
@@ -614,74 +607,57 @@ OUTPUT FORMAT:
 - Maintain the exact order as they appear
 
 Be thorough, complete, and accurate. Missing even one item or getting spelling/formatting wrong will cause failure."""
-            
-            gemini_payload = {
-                "model": "google/gemini-3-pro-preview",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": enhanced_prompt
-                            },
-                            {
-                                "type": "video_url",
-                                "video_url": {
-                                    "url": video_url
-                                }
-                            }
-                        ]
-                    }
+
+        messages: List[Dict[str, Any]] = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": enhanced_prompt},
+                    {"type": "video_url", "video_url": {"url": video_url}},
                 ],
-                "max_tokens": 32000
             }
-            
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-            }
-            
-            with httpx.Client(timeout=300.0) as client:
-                response = client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    json=gemini_payload,
-                    headers=headers
-                )
-                response.raise_for_status()
-                result = response.json()
-            
-            # Extract response
-            transcript_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-            
+        ]
+
+        try:
+            client = LLMClient(
+                model=model,
+                max_tokens=32000,
+                timeout=300.0,
+            )
+            try:
+                response = client.chat(messages, max_tokens=32000)
+            finally:
+                client.close()
+
+            transcript_text = (response.text or "").strip()
             if not transcript_text:
-                return ToolResult.fail("Gemini returned empty response")
-            
-            # Build output
+                return ToolResult.fail("Returned empty response")
+
             output_parts = [
                 f"## Video Analysis: {video_url}",
                 f"**Instruction:** {instruction[:200]}{'...' if len(instruction) > 200 else ''}",
-                f"**Model:** Gemini 3 Pro Preview",
                 "",
                 "---",
                 "",
-                transcript_text
+                transcript_text,
             ]
-            
-            # Save to platform cache
+
             cache_path = self._save_to_platform_cache(
                 transcript_text,
                 extension="txt",
-                prefix="transcript"
+                prefix="transcript",
             )
             output_parts.append(f"\n[Full transcript saved to: {cache_path}]")
-            output_parts.append("\n**NOTE: This analysis is COMPLETE. The full content is available in the saved file above.**")
-            
+            output_parts.append(
+                "\n**NOTE: This analysis is COMPLETE. The full content is available in the saved file above.**"
+            )
+
             return ToolResult.ok("\n".join(output_parts))
-            
-        except httpx.HTTPStatusError as e:
-            error_msg = e.response.text[:500] if e.response else str(e)
-            return ToolResult.fail(f"API error: {e.response.status_code} - {error_msg}")
+
+        except LLMError as e:
+            return ToolResult.fail(f"API error: {e.code} - {e.message}")
+        except ValueError as e:
+            return ToolResult.fail(f"Config error: {e}")
         except Exception as e:
             return ToolResult.fail(f"Transcript failed: {e}")
     

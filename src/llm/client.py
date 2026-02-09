@@ -126,7 +126,7 @@ class LLMClient:
         """Check if model supports temperature parameter."""
         model_lower = model.lower()
         # Reasoning/thinking models typically don't support temperature
-        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1", "kimi", "k2.5"]):
+        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1"]):
             return False
         return True
 

@@ -484,6 +484,7 @@ def run_agent_loop(
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"tool name: {tool_name}")
+            _log(f"tool args: {tool_args}")
             
             # Emit item.started
             item_id = next_item_id()
@@ -535,6 +536,7 @@ def run_agent_loop(
                 )
             ))
             
+            _log(f"tool result: {output}")
             # Collect tool result
             tool_results.append({
                 "role": "tool",

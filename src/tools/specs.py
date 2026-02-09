@@ -174,6 +174,28 @@ Supported formats: PNG, JPEG, GIF, WebP, BMP, PPM.""",
     },
 }
 
+# Analyze image tool (vision model; use when main model does not support images)
+ANALYZE_IMAGE_SPEC: dict[str, Any] = {
+    "name": "analyze_image",
+    "description": """Analyze a local image using a vision model and return a text result.
+Use this when the main model cannot process images directly: provide the image path and clear instructions for what to analyze (e.g. "Transcribe all text", "Describe the UI", "What error message is shown?"). The vision model analyzes the image and returns the result as text.
+Supported formats: PNG, JPEG, GIF, WebP, BMP, PPM.""",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "Local filesystem path to the image file",
+            },
+            "instructions": {
+                "type": "string",
+                "description": "What to analyze: e.g. 'Transcribe all visible text', 'Describe the diagram', 'What error is shown?'",
+            },
+        },
+        "required": ["path", "instructions"],
+    },
+}
+
 # Write file tool
 WRITE_FILE_SPEC: dict[str, Any] = {
     "name": "write_file",
@@ -395,7 +417,8 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "write_file": WRITE_FILE_SPEC,
     "list_dir": LIST_DIR_SPEC,
     "grep_files": GREP_FILES_SPEC,
-    "view_image": VIEW_IMAGE_SPEC,
+    # "view_image": VIEW_IMAGE_SPEC,
+    "analyze_image": ANALYZE_IMAGE_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
     "transcript": TRANSCRIPT_SPEC,

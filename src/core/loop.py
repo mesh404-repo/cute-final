@@ -27,8 +27,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from src.core.compaction import (
     manage_context,
 )
-from src.llm.client import CostLimitExceeded, LLMClient, LLMError
-from src.llm.vision import analyze_images_with_vision
+from src.llm.client import CostLimitExceeded, LLMError
 from src.output.jsonl import (
     ItemCompletedEvent,
     ItemStartedEvent,
@@ -264,8 +263,6 @@ def run_agent_loop(
     prev_messages = copy.deepcopy(messages)
 
     main_model = GLM_4_7_TEE
-    # Lazy-initialized vision client when main model does not support images
-    vision_client: Optional[LLMClient] = None
 
     while iteration < max_iterations:
         iteration += 1
@@ -590,50 +587,30 @@ def run_agent_loop(
         
         if total_cost >= cost_limit:
             break
-        # Now add any images as a separate user message (after tool results).
-        # If main model does not support images (e.g. GLM-4.7-TEE), use a vision model
-        # (e.g. Kimi K2.5-TEE) to analyze images and inject text instead of raw image content.
+        # Now add any images as a separate user message (after tool results)
+        # Limit to max 5 images per turn to avoid hitting API limits
         MAX_IMAGES_PER_TURN = 5
         if pending_images:
-            vision_model = config.get("vision_model") or ""
-            if vision_model:
-                # Analyze images with vision model and inject text description
-                if vision_client is None:
-                    vision_client = LLMClient(
-                        model=vision_model,
-                        temperature=0.0,
-                        max_tokens=4096,
-                        cost_limit=cost_limit,
-                        timeout=float(config.get("llm_timeout", 180)),
-                    )
-                    _log(f"Vision client created for image analysis: {vision_model}")
-                analysis_text, vision_cost = analyze_images_with_vision(
-                    vision_client, pending_images, max_images=MAX_IMAGES_PER_TURN
-                )
-                total_cost += vision_cost
-                _log(f"Image analysis (vision): {len(pending_images)} image(s), cost ~{vision_cost:.4f}")
-                messages.append({
-                    "role": "user",
-                    "content": f"Image analysis from view_image (analyzed by vision model):\n\n{analysis_text}",
-                })
-            else:
-                # Main model supports images: inject raw image content
-                images_to_add = pending_images[:MAX_IMAGES_PER_TURN]
-                if len(pending_images) > MAX_IMAGES_PER_TURN:
-                    _log(f"Limiting images: {len(pending_images)} requested, adding {MAX_IMAGES_PER_TURN}")
-                image_content = []
-                for img in images_to_add:
-                    image_content.append({"type": "text", "text": f"Image from {img['tool_name']}:"})
-                    image_content.append(img["content"])
-                messages.append({
-                    "role": "user",
-                    "content": image_content,
-                })
-                from src.core.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
-                total_imgs = count_total_images(messages)
-                if total_imgs > MAX_IMAGES_PER_REQUEST - 10:
-                    _log(f"Immediate image prune: {total_imgs} images in context")
-                    messages = prune_old_images(messages)
+            images_to_add = pending_images[:MAX_IMAGES_PER_TURN]
+            if len(pending_images) > MAX_IMAGES_PER_TURN:
+                _log(f"Limiting images: {len(pending_images)} requested, adding {MAX_IMAGES_PER_TURN}")
+            
+            image_content = []
+            for img in images_to_add:
+                image_content.append({"type": "text", "text": f"Image from {img['tool_name']}:"})
+                image_content.append(img["content"])
+            
+            messages.append({
+                "role": "user",
+                "content": image_content,
+            })
+            
+            # Immediately prune if we've exceeded image limits
+            from src.core.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
+            total_imgs = count_total_images(messages)
+            if total_imgs > MAX_IMAGES_PER_REQUEST - 10:
+                _log(f"Immediate image prune: {total_imgs} images in context")
+                messages = prune_old_images(messages)
     
     # 7. Emit turn.completed
     emit(
@@ -650,9 +627,4 @@ def run_agent_loop(
     _log(
         f"Tokens: {total_input_tokens} input, {total_cached_tokens} cached, {total_output_tokens} output"
     )
-    if vision_client is not None:
-        try:
-            vision_client.close()
-        except Exception:
-            pass
     ctx.done()

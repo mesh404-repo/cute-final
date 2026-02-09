@@ -196,6 +196,8 @@ class ToolRegistry:
                 result = self._execute_apply_patch(cwd, arguments)
             elif name == "view_image":
                 result = self._execute_view_image(cwd, arguments)
+            elif name == "analyze_image":
+                result = self._execute_analyze_image(cwd, arguments)
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
@@ -549,7 +551,24 @@ Partial output before timeout:
         
         from src.tools.view_image import view_image
         return view_image(path, cwd)
-    
+
+    def _execute_analyze_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Analyze an image with the vision model using the given instructions."""
+        path = args.get("path", "")
+        instructions = args.get("instructions", "")
+        if not path:
+            return ToolResult.invalid(
+                "Missing required parameter 'path'. "
+                "Usage: analyze_image(path: str, instructions: str)"
+            )
+        if not instructions:
+            return ToolResult.invalid(
+                "Missing required parameter 'instructions'. "
+                "Usage: analyze_image(path: str, instructions: str)"
+            )
+        from src.tools.analyze_image import analyze_image as run_analyze_image
+        return run_analyze_image(path, instructions, cwd)
+
     def _execute_update_plan(self, args: dict[str, Any]) -> ToolResult:
         """Update the task plan."""
         steps = args.get("steps")

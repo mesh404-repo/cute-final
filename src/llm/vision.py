@@ -1,9 +1,8 @@
 """
 Image analysis via a vision-capable model.
 
-When the main model does not support images (e.g. GLM-4.7-TEE), images from
-view_image are analyzed by a separate vision model (e.g. Kimi K2.5-TEE) and
-the text description is injected into the conversation instead of raw image content.
+Provides a vision client and analysis for the analyze_image tool:
+load image, send to vision model with custom instructions, return text result.
 """
 
 from __future__ import annotations
@@ -12,72 +11,56 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.llm.client import LLMClient, LLMError
 
-# Prompt for the vision model to describe the image for the coding agent
-VISION_ANALYSIS_PROMPT = """Describe this image in detail for a coding agent. Include:
-- Any text visible in the image (exact strings, code, file paths, terminal output).
-- UI elements, buttons, menus, or dialogs.
-- Diagrams, charts, or geometric shapes.
-- File contents, error messages, or logs if visible.
-- Anything relevant to completing a programming or system task.
-Be concise but complete. If the image is a screenshot of code or a terminal, transcribe the content accurately."""
+_vision_client: Optional[LLMClient] = None
 
 
-def analyze_image(
-    vision_client: LLMClient,
+def get_vision_client() -> LLMClient:
+    """Return a lazily-created vision model client (uses config vision_model)."""
+    global _vision_client
+    if _vision_client is not None:
+        return _vision_client
+    from src.config.defaults import get_config
+    config = get_config()
+    model = config.get("vision_model") or ""
+    if not model:
+        raise ValueError(
+            "vision_model is not configured. Set vision_model in config or LLM_VISION_MODEL "
+            "for the analyze_image tool (e.g. moonshotai/Kimi-K2.5-TEE)."
+        )
+    _vision_client = LLMClient(
+        model=model,
+        temperature=0.0,
+        max_tokens=4096,
+        cost_limit=float(config.get("cost_limit", 100.0)),
+        timeout=float(config.get("llm_timeout", 180)),
+    )
+    return _vision_client
+
+
+def analyze_image_with_instructions(
     image_content: Dict[str, Any],
-    tool_name: str = "view_image",
+    instructions: str,
 ) -> Tuple[str, float]:
     """
-    Send the image to the vision model and return a text description.
+    Send the image and instructions to the vision model and return (text, cost).
 
     Args:
-        vision_client: LLM client configured with a vision-capable model.
         image_content: Content block dict, e.g. {"type": "image_url", "image_url": {"url": "data:..."}}.
-        tool_name: Name of the tool that produced the image (for logging).
+        instructions: User instructions for what to analyze (e.g. "Transcribe all text").
 
     Returns:
-        Tuple of (description_text, cost).
+        Tuple of (analysis_text, cost).
     """
     content: List[Dict[str, Any]] = [
-        {"type": "text", "text": VISION_ANALYSIS_PROMPT},
+        {"type": "text", "text": instructions},
         image_content,
     ]
     messages = [{"role": "user", "content": content}]
+    client = get_vision_client()
     try:
-        response = vision_client.chat(messages, max_tokens=4096)
+        response = client.chat(messages, max_tokens=4096)
         text = (response.text or "").strip()
         cost = getattr(response, "cost", 0.0)
-        return text or "[Vision model returned no description.]", cost
+        return text or "[Vision model returned no content.]", cost
     except LLMError as e:
         return f"[Image analysis failed: {e.message}]", 0.0
-
-
-def analyze_images_with_vision(
-    vision_client: LLMClient,
-    pending_images: List[Dict[str, Any]],
-    max_images: int = 5,
-) -> Tuple[str, float]:
-    """
-    Analyze multiple image blocks with the vision model and return combined text and total cost.
-
-    Args:
-        vision_client: LLM client for vision model.
-        pending_images: List of {"tool_name": str, "content": image_content_dict}.
-        max_images: Maximum number of images to process per turn.
-
-    Returns:
-        Tuple of (combined_analysis_text, total_vision_cost).
-    """
-    combined: List[str] = []
-    total_cost = 0.0
-    to_process = pending_images[:max_images]
-    for i, img in enumerate(to_process):
-        tool_name = img.get("tool_name", "view_image")
-        content = img.get("content")
-        if not content or not isinstance(content, dict):
-            combined.append(f"Image {i + 1} from {tool_name}: [invalid content]")
-            continue
-        text, cost = analyze_image(vision_client, content, tool_name=tool_name)
-        total_cost += cost
-        combined.append(f"Image from {tool_name}:\n{text}")
-    return "\n\n---\n\n".join(combined), total_cost

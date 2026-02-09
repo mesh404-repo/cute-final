@@ -65,7 +65,10 @@ class LLMResponse:
     finish_reason: str = ""
     raw: Optional[Dict[str, Any]] = None
     cost: float = 0.0
-    
+    # Reasoning/thinking (Kimi K2.5, OpenRouter reasoning models, etc.)
+    reasoning: Optional[str] = None
+    reasoning_details: Optional[List[Dict[str, Any]]] = None
+
     def has_function_calls(self) -> bool:
         """Check if response contains function calls."""
         return len(self.function_calls) > 0
@@ -122,8 +125,8 @@ class LLMClient:
     def _supports_temperature(self, model: str) -> bool:
         """Check if model supports temperature parameter."""
         model_lower = model.lower()
-        # Reasoning models don't support temperature
-        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1"]):
+        # Reasoning/thinking models typically don't support temperature
+        if any(x in model_lower for x in ["o1", "o3", "deepseek-r1", "kimi", "k2.5"]):
             return False
         return True
 
@@ -257,6 +260,14 @@ class LLMClient:
             result.finish_reason = choice.get("finish_reason", "") or ""
             result.text = message.get("content", "") or ""
 
+            # Reasoning/thinking (Kimi K2.5-TEE, OpenRouter reasoning models)
+            result.reasoning = message.get("reasoning") or message.get("reasoning_content")
+            rd = message.get("reasoning_details")
+            if isinstance(rd, list):
+                result.reasoning_details = rd
+            else:
+                result.reasoning_details = None
+
             # Extract function calls
             tool_calls = message.get("tool_calls", [])
             if tool_calls:
@@ -280,7 +291,10 @@ class LLMClient:
         return result
 
     def _prepare_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Prepare messages for the API, cleaning up any incompatible fields."""
+        """Prepare messages for the API, cleaning up any incompatible fields.
+        Preserves reasoning and reasoning_details on assistant messages for
+        models that support continued reasoning (e.g. Kimi K2.5-TEE).
+        """
         prepared = []
         for msg in messages:
             new_msg = dict(msg)

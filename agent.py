@@ -55,7 +55,7 @@ from src.llm.client import CostLimitExceeded, LLMClient
 from src.output.jsonl import ErrorEvent, emit
 from src.tools.registry import ToolRegistry
 
-os.environ["CHUTES_API_KEY"] = ""
+# CHUTES_API_KEY is read from environment; do not override it here
 
 class AgentContext:
     """Minimal context for agent execution (replaces term_sdk.AgentContext)."""

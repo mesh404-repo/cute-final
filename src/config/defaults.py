@@ -26,8 +26,8 @@ CONFIG: Dict[str, Any] = {
     "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
     # Provider
     "provider": "chutes",
-    # Reasoning effort: none, minimal, low, medium, high, xhigh (not used for Claude)
-    "reasoning_effort": "none",
+    # Reasoning effort for Kimi K2.5-TEE: none, minimal, low, medium, high, xhigh
+    "reasoning_effort": "high",
     # Token limits
     "max_tokens": 16384,
     # Temperature (0 = deterministic)

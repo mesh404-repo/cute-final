@@ -61,6 +61,20 @@ def _log(msg: str) -> None:
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
 
 
+def _append_assistant_with_reasoning(
+    messages: List[Dict[str, Any]],
+    response: Any,
+    response_text: str,
+) -> None:
+    """Append assistant message, preserving reasoning_details/reasoning when present."""
+    msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
+    if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
+        msg["reasoning_details"] = response.reasoning_details
+    if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
+        msg["reasoning"] = response.reasoning
+    messages.append(msg)
+
+
 def _add_cache_control_to_message(
     msg: Dict[str, Any],
     cache_control: Dict[str, str],
@@ -392,7 +406,7 @@ def run_agent_loop(
 
                 if "task incomplete" in response_text.lower():
                     verification_phase = None
-                    messages.append({"role": "assistant", "content": response_text})
+                    _append_assistant_with_reasoning(messages, response, response_text)
                     messages.append({
                         "role": "user",
                         "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
@@ -405,7 +419,7 @@ def run_agent_loop(
                 # First verification round just completed – store result, request confirmation
                 verification_result = response_text
                 verification_phase = "confirmation"
-                messages.append({"role": "assistant", "content": response_text})
+                _append_assistant_with_reasoning(messages, response, response_text)
 
                 confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
                     instruction=ctx.instruction,
@@ -420,7 +434,7 @@ def run_agent_loop(
 
             # No verification yet – request first self-verification
             verification_phase = "first"
-            messages.append({"role": "assistant", "content": response_text})
+            _append_assistant_with_reasoning(messages, response, response_text)
 
             verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
                 instruction=ctx.instruction
@@ -434,6 +448,12 @@ def run_agent_loop(
         
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
+        
+        # Preserve reasoning for models that support it (Kimi K2.5-TEE, etc.)
+        if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
+            assistant_msg["reasoning_details"] = response.reasoning_details
+        if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
+            assistant_msg["reasoning"] = response.reasoning
         
         # Build tool_calls for message history
         tool_calls_data = []

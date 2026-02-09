@@ -198,6 +198,8 @@ class ToolRegistry:
                 result = self._execute_view_image(cwd, arguments)
             elif name == "analyze_image":
                 result = self._execute_analyze_image(cwd, arguments)
+            elif name == "image_info":
+                result = self._execute_image_info(cwd, arguments)
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
@@ -760,6 +762,15 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             min_size_bytes=int(args.get("min_size_bytes", 1)),
             terminate_grace_sec=float(args.get("terminate_grace_sec", 2.0)),
         )
+    
+
+    def _execute_image_info(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Return basic metadata about an image file."""
+        path = args.get("path", "")
+        if not path:
+            return ToolResult.invalid("Missing required parameter 'path'. Usage: image_info(path: str)")
+        from src.tools.media_extra import run_image_info
+        return run_image_info(cwd, path=path)
 
     # -------------------------------------------------------------------------
     # Caching methods

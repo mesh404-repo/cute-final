@@ -593,7 +593,7 @@ Partial output before timeout:
                 "No instruction provided. You must specify what you want to extract from the video."
             )
 
-        model = os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE")
+        model = "deepseek-ai/DeepSeek-V3.2-TEE"
         enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
 
 {instruction}

@@ -54,12 +54,10 @@ GLM_4_6_TEE = "zai-org/GLM-4.6-TEE"
 GLM_4_7_TEE = "zai-org/GLM-4.7-TEE"
 KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
 DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
-GPT_OSS_TEE = "openai/gpt-oss-120b-TEE"
 
 REASING_MODELS = [    
     GLM_4_7_TEE,
     GLM_4_6_TEE,
-    GPT_OSS_TEE,
 ]
 
 if TYPE_CHECKING:
@@ -263,7 +261,7 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    main_model = GPT_OSS_TEE
+    main_model = GLM_4_6_TEE
 
     while iteration < max_iterations:
         iteration += 1

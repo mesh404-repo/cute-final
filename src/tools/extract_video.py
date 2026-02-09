@@ -256,7 +256,7 @@ def extract_video_frames(
     ]
     output_lines.extend([f"  - {f}" for f in frame_list])
     output_lines.append("")
-    output_lines.append("Use view_image to analyze individual frames.")
+    output_lines.append("Use analyze_image to analyze individual frames.")
     
     return ToolResult(
         success=True,
@@ -388,7 +388,7 @@ def extract_keyframes(
     ]
     output_lines.extend([f"  - {f}" for f in frame_list])
     output_lines.append("")
-    output_lines.append("Use view_image to analyze individual keyframes.")
+    output_lines.append("Use analyze_image to analyze individual keyframes.")
     
     return ToolResult(
         success=True,
@@ -411,11 +411,11 @@ EXTRACT_VIDEO_FRAMES_SPEC: Dict[str, Any] = {
     "name": "extract_video_frames",
     "description": """Extract frames from a video file at regular intervals.
 
-Use this to analyze video content by extracting frames that can then be viewed with view_image.
+Use this to analyze video content by extracting frames that can then be viewed with analyze_image.
 Useful for: game footage analysis, tutorial extraction, action detection, etc.
 
 The frames are saved as images in the specified output directory.
-After extraction, use view_image on individual frames to analyze them.""",
+After extraction, use analyze_image on individual frames to analyze them.""",
     "parameters": {
         "type": "object",
         "properties": {
@@ -460,7 +460,7 @@ More efficient than fixed-interval extraction - only extracts frames where
 significant visual changes occur. Good for understanding video structure
 and key moments.
 
-After extraction, use view_image on individual keyframes to analyze them.""",
+After extraction, use analyze_image on individual keyframes to analyze them.""",
     "parameters": {
         "type": "object",
         "properties": {

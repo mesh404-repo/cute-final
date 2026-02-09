@@ -24,6 +24,10 @@ CONFIG: Dict[str, Any] = {
     # ==========================================================================
     # Model to use via Chutes API (OpenAI-compatible)
     "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
+    # Vision model for image analysis when main model does not support images (e.g. GLM-4.7-TEE).
+    # If set, view_image results are analyzed by this model and text is injected instead of raw image.
+    # Default Kimi K2.5 TEE so view_image works when main model is GLM-4.7-TEE. Set to "" to inject raw images (vision-capable main only).
+    "vision_model": os.environ.get("LLM_VISION_MODEL", "deepseek-ai/DeepSeek-V3.2-TEE"),
     # Provider
     "provider": "chutes",
     # Reasoning effort for Kimi K2.5-TEE: none, minimal, low, medium, high, xhigh

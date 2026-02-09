@@ -26,7 +26,7 @@ CONFIG: Dict[str, Any] = {
     "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
     # Vision model for the analyze_image tool (e.g. Kimi K2.5-TEE, DeepSeek-V3.2-TEE).
     # Required for analyze_image; set to empty to disable (tool will error if called).
-    "vision_model": os.environ.get("LLM_VISION_MODEL", "moonshotai/Kimi-K2.5-TEE"),
+    "vision_model": os.environ.get("LLM_VISION_MODEL", "deepseek-ai/DeepSeek-V3.2-TEE"),
     # Provider
     "provider": "chutes",
     # Reasoning effort for Kimi K2.5-TEE: none, minimal, low, medium, high, xhigh

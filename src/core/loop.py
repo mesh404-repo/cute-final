@@ -59,7 +59,7 @@ KIMI_K2_THINKING_TEE = "moonshotai/Kimi-K2-Thinking-TEE"
 REASING_MODELS = [    
     GLM_4_7_TEE,
     GLM_4_6_TEE,
-    KIMI_K2_THINKING_TEE,
+    KIMI_2_5_TEE,
 ]
 
 if TYPE_CHECKING:
@@ -263,7 +263,7 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    main_model = KIMI_K2_THINKING_TEE
+    main_model = GLM_4_7_TEE
 
     while iteration < max_iterations:
         iteration += 1

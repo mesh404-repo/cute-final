@@ -262,13 +262,14 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    main_model = GLM_4_7_TEE
-
+    
     while iteration < max_iterations:
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
         temperature = 0.0
+        main_model = KIMI_2_5_TEE
+
         try:
             # ================================================================
             # Context Management (replaces sliding window)
@@ -350,10 +351,10 @@ def run_agent_loop(
                         
                         messages = copy.deepcopy(prev_messages)
                         cached_messages = _apply_caching(messages, enabled=cache_enabled)
-                    else:
-                        model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
-                        main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
-                        _log(f"Switching to model: {main_model}")
+                    
+                    model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
+                    main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
+                    _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
                         wait_time = 2 * attempt  # 10s, 20s, 30s, 40s

@@ -10,9 +10,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.llm.client import LLMClient, LLMError
+import time
 
 _vision_client: Optional[LLMClient] = None
 
+KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
+DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
+VISION_MODELS = [KIMI_2_5_TEE, DEEPSEEK_3_2_TEE]
 
 def get_vision_client() -> LLMClient:
     """Return a lazily-created vision model client (uses config vision_model)."""
@@ -57,10 +61,24 @@ def analyze_image_with_instructions(
     ]
     messages = [{"role": "user", "content": content}]
     client = get_vision_client()
-    try:
-        response = client.chat(messages, max_tokens=4096)
-        text = (response.text or "").strip()
-        cost = getattr(response, "cost", 0.0)
-        return text or "[Vision model returned no content.]", cost
-    except LLMError as e:
-        return f"[Image analysis failed: {e.message}]", 0.0
+
+    retry = 0
+    model = KIMI_2_5_TEE
+    error_msg = ""
+    while retry < 3:
+        try:
+            response = client.chat(messages, model=model, max_tokens=4096)
+            text = (response.text or "").strip()
+            cost = getattr(response, "cost", 0.0)
+            return text or "[Vision model returned no content.]", cost
+        except LLMError as e:
+            error_msg = e.message
+
+            model_index = VISION_MODELS.index(model) if model in VISION_MODELS else -1
+            model = VISION_MODELS[(model_index + 1) % len(VISION_MODELS)]
+
+            retry += 1
+
+        time.sleep(4)        
+    
+    return f"[Image analysis failed: {error_msg}]", 0.0

@@ -61,6 +61,7 @@ REASING_MODELS = [
     GLM_4_7_TEE,
     GLM_4_6_TEE,
     KIMI_2_5_TEE,
+    DEEPSEEK_3_2_TEE,
 ]
 
 if TYPE_CHECKING:
@@ -264,14 +265,14 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    main_model = KIMI_2_5_TEE
+    main_model = DEEPSEEK_3_2_TEE
 
     while iteration < max_iterations:
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
         temperature = 0.0
-        main_model = KIMI_2_5_TEE
+        main_model = DEEPSEEK_3_2_TEE
         
         try:
             # ================================================================
@@ -313,7 +314,7 @@ def run_agent_loop(
                     if reasoning_effort and reasoning_effort != "none":
                         extra_body["reasoning"] = {"effort": reasoning_effort}
                     
-                    response = llm.chat(
+                    response = llm.chat_stream(
                         cached_messages,
                         tools=tool_specs,
                         max_tokens=config.get("max_tokens", 16384),

@@ -703,7 +703,12 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 3. Wait to reap (CRITICAL!)
 4. Start fresh and save new PID
 
-**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing.
+**For singleton processes (VMs, databases, servers):**
+- Before starting: Kill ALL existing instances first (see Singleton Process Management)
+- After starting: Verify exactly one instance with `pgrep -c process_name`
+- Before completion: MANDATORY verification that count = 1
+
+**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing. For singleton processes, ensure only one instance exists before completing the task.
 
 ### Service and artifact readiness
 
@@ -950,15 +955,52 @@ You have foundational knowledge for managing processes. This is essential for ro
 ### Singleton Process Management (CRITICAL)
 When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
 1. **Before starting**: Kill ALL existing instances first
-   - `pkill -9 process_name || true` (ignore error if none running)
+   - Check current count: `pgrep -c process_name` or `pgrep -c -f "pattern"`
+   - If count > 0, kill ALL instances: `pkill -9 process_name || true` (ignore error if none running)
+   - For processes with multiple binaries (e.g., QEMU): `pkill -9 -f "qemu-system" || true`
    - `sleep 1` to ensure cleanup
-   - Verify: `pgrep -c process_name` should return 0 or fail
+   - Verify cleanup: `pgrep -c process_name` should return `0` (or command should fail with exit code 1)
+   - **CRITICAL**: If `pgrep` still finds processes, they may be zombies - identify and handle them separately
 2. **After starting**: Verify exactly one instance
-   - `pgrep -c process_name` should return exactly `1`
-   - If count > 1, you have duplicate processes - kill all and restart fresh
-3. **Before task completion**: Final verification
-   - Confirm singleton: `pgrep -c process_name` equals `1`
-   - Tests often fail if they find multiple PIDs when expecting one
+   - Check count: `pgrep -c process_name` should return exactly `1`
+   - If count > 1, you have duplicate processes or zombies - kill ALL and restart fresh
+   - If count = 0, process failed to start - investigate and fix before continuing
+3. **Before task completion**: MANDATORY final verification
+   - **MUST verify singleton status**: `pgrep -c process_name` equals exactly `1`
+   - **CRITICAL**: Tests that use `pgrep process_name` expect a single PID. If multiple PIDs are returned (even if one is a zombie), the test will fail with "Failed to get QEMU command line" or similar errors
+   - If multiple processes exist, kill ALL and restart to ensure clean singleton state
+   - For QEMU specifically: `pgrep qemu-system` or `pgrep -f qemu-system` must return exactly one PID
+
+### QEMU and Virtual Machine Processes (CRITICAL)
+When working with QEMU, VirtualBox, or other VM processes:
+- **Monitor and keyboard sockets**: When the task requires QEMU to accept programmatic keyboard input (e.g. for automated testing or verification), place the QEMU monitor socket where verification scripts expect it. Use the conventional path `/tmp/qemu-monitor.sock` for the monitor (e.g. `-monitor unix:/tmp/qemu-monitor.sock,server,nowait`). Do not use app-specific or custom directories (e.g. `/app/run/`) for these sockets unless the task explicitly specifies a path; verification and test harnesses typically connect to the standard location.
+1. **Before starting QEMU**: ALWAYS check and kill existing instances
+   ```
+   # Check for existing QEMU processes
+   pgrep -c qemu-system
+   # If > 0, kill all:
+   pkill -9 -f qemu-system || true
+   sleep 1
+   # Verify cleanup: should return 0 or fail
+   pgrep -c qemu-system
+   ```
+2. **After starting QEMU**: Verify exactly one instance
+   ```
+   # Must return exactly 1
+   pgrep -c qemu-system
+   # If returns > 1, you have duplicates or zombies - kill all and restart
+   ```
+3. **Before task completion**: MANDATORY verification
+   - `pgrep qemu-system` (without -c) will return multiple PIDs if zombies exist
+   - Tests use `pgrep qemu-system` and expect a single PID string
+   - If multiple PIDs are returned, test fixtures fail with "Failed to get QEMU command line"
+   - **You MUST ensure**: `pgrep -c qemu-system` returns exactly `1` before completing
+4. **Common failure pattern**: 
+   - Agent starts QEMU multiple times (trial and error)
+   - Each failed attempt leaves a zombie process
+   - `pgrep qemu-system` returns "PID1\nPID2\nPID3" instead of single PID
+   - Test tries to read `/proc/PID1\nPID2\nPID3/cmdline` and fails
+   - **Solution**: Kill ALL QEMU processes before starting, verify singleton after start, verify again before completion
 
 ### Safe Process Killing (Avoid Self-Termination)
 CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
@@ -982,10 +1024,17 @@ CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matc
 
 ### Pre-Completion Checklist
 Before calling done() or signaling task completion:
-1. Verify expected processes are running: `pgrep -c expected_process`
+1. **MANDATORY**: Verify expected processes are running with correct count
+   - For singleton processes (VMs, databases, servers): `pgrep -c process_name` must equal exactly `1`
+   - If count > 1, tests will fail because `pgrep` returns multiple PIDs (tests expect single PID)
+   - Example: `pgrep -c qemu-system` must return `1`, not `2` or more
 2. Verify NO duplicate/stale processes from failed attempts
+   - Check for zombie processes: `ps aux | awk '$8=="Z"' | grep process_name`
+   - If zombies exist, they will cause `pgrep` to return multiple PIDs
 3. Kill any processes you started that aren't needed for verification
-4. If task requires exactly N processes, confirm count matches
+4. If task requires exactly N processes, confirm count matches exactly
+   - Use `pgrep -c` to count, not `pgrep` (which lists all PIDs)
+   - For singleton processes, failure to verify count = 1 will cause test failures
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:

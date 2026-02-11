@@ -204,6 +204,8 @@ class ToolRegistry:
                 result = self._execute_extract_video_frames(cwd, arguments)
             elif name == "extract_keyframes":
                 result = self._execute_extract_keyframes(cwd, arguments)
+            elif name == "finish":
+                result = self._execute_finish(arguments)
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
@@ -631,6 +633,12 @@ Partial output before timeout:
             format=args.get("format", "png"),
         )
     
+    def _execute_finish(self, args: dict[str, Any]) -> ToolResult:
+        """Signal task completion with a summary."""
+        summary = args.get("summary", "")
+        from src.tools.finish import execute_finish
+        return execute_finish(summary)
+
     def _execute_update_plan(self, args: dict[str, Any]) -> ToolResult:
         """Update the task plan."""
         steps = args.get("steps")

@@ -19,6 +19,7 @@ from src.tools.write_file import WriteFileTool
 from src.tools.web_search import web_search
 from src.tools.extract_video import extract_video_frames, extract_keyframes
 from src.tools.analyze_image import analyze_image
+from src.tools.finish import execute_finish
 
 __all__ = [
     # Base
@@ -46,4 +47,5 @@ __all__ = [
     "extract_video_frames",
     "extract_keyframes",
     "web_search",
+    "execute_finish",
 ]

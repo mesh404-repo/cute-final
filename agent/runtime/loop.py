@@ -246,9 +246,6 @@ def run_agent_loop(
     total_output_tokens = 0
     total_cached_tokens = 0
     pending_completion = False
-    last_agent_message = ""
-    verification_phase: Optional[str] = None  # None | "first" | "confirmation"
-    verification_result = ""
     
     max_iterations = config.get("max_iterations", 200)
     cache_enabled = config.get("cache_enabled", True)
@@ -563,27 +560,13 @@ def run_agent_loop(
             if total_cost >= cost_limit:
                 break
 
-            # Verification workflow: first → confirmation → complete
-            if verification_phase == "confirmation":
-                # LLM confirmed using previous verification (or did missing-only checks)
-                _log("Task completion confirmed after verification confirmation")
 
-                if "task incomplete" in response_text.lower():
-                    verification_phase = None
-                    messages.append({
-                        "role": "user",
-                        "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
-                    })
-                    _log("Task incomplete – requesting completion via tools")
-                    continue
-                break
-
-            if verification_phase == "first":
+            if pending_completion:
                 # First verification round just completed – store result, request confirmation                
                 break
 
             # No verification yet – request first self-verification
-            verification_phase = "first"
+            pending_completion = True
 
             verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
                 instruction=ctx.instruction

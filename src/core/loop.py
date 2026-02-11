@@ -59,7 +59,6 @@ KIMI_K2_THINKING_TEE = "moonshotai/Kimi-K2-Thinking-TEE"
 REASING_MODELS = [    
     GLM_4_7_TEE,
     GLM_4_6_TEE,
-    KIMI_2_5_TEE,
 ]
 
 if TYPE_CHECKING:

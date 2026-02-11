@@ -962,6 +962,7 @@ When a task requires exactly ONE instance of a process (e.g., a VM, database, se
 
 ### QEMU and Virtual Machine Processes (CRITICAL)
 When working with QEMU, VirtualBox, or other VM processes:
+- **Monitor and keyboard sockets**: When the task requires QEMU to accept programmatic keyboard input (e.g. for automated testing or verification), place the QEMU monitor socket where verification scripts expect it. Use the conventional path `/tmp/qemu-monitor.sock` for the monitor (e.g. `-monitor unix:/tmp/qemu-monitor.sock,server,nowait`). Do not use app-specific or custom directories (e.g. `/app/run/`) for these sockets unless the task explicitly specifies a path; verification and test harnesses typically connect to the standard location.
 1. **Before starting QEMU**: ALWAYS check and kill existing instances
    ```
    # Check for existing QEMU processes

@@ -89,7 +89,7 @@ class LLMClient:
         cost_limit: Optional[float] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        timeout: float = 80.0,
+        timeout: float = 180.0,
     ):
         self.model = model
         self.temperature = temperature
@@ -119,7 +119,7 @@ class LLMClient:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
             },
-            timeout=httpx.Timeout(timeout, connect=30.0),
+            timeout=httpx.Timeout(connect=15.0, read=timeout, write=30.0, pool=30.0),
         )
 
     def _supports_temperature(self, model: str) -> bool:

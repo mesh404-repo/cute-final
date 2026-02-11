@@ -23,7 +23,7 @@ CONFIG: Dict[str, Any] = {
     # Model Settings (simulates --model gpt-5.2 -c model_reasoning_effort=xhigh)
     # ==========================================================================
     # Model to use via Chutes API (OpenAI-compatible)
-    "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
+    "model": os.environ.get("LLM_MODEL", "deepseek-ai/DeepSeek-V3.2-TEE"),
     # Vision model for the analyze_image tool (e.g. Kimi K2.5-TEE, DeepSeek-V3.2-TEE).
     # Required for analyze_image; set to empty to disable (tool will error if called).
     "vision_model": os.environ.get("LLM_VISION_MODEL", "deepseek-ai/DeepSeek-V3.2-TEE"),

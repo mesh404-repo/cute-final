@@ -581,20 +581,8 @@ def run_agent_loop(
                 break
 
             if verification_phase == "first":
-                # First verification round just completed – store result, request confirmation
-                verification_result = response_text
-                verification_phase = "confirmation"
-
-                confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
-                    instruction=ctx.instruction,
-                    previous_verification_result=verification_result,
-                )
-                messages.append({
-                    "role": "user",
-                    "content": confirmation_prompt,
-                })
-                _log("Requesting confirmation: use previous verification, confirm or fix gaps only")
-                continue
+                # First verification round just completed – store result, request confirmation                
+                break
 
             # No verification yet – request first self-verification
             verification_phase = "first"

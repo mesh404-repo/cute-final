@@ -22,9 +22,8 @@ import sys
 import time
 from pathlib import Path
 
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
+# Add project root to path so "agent" package is found
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Auto-install dependencies if missing
 def ensure_dependencies():
@@ -49,11 +48,11 @@ def ensure_dependencies():
 
 ensure_dependencies()
 
-from src.config.defaults import CONFIG
-from src.core.loop import run_agent_loop
-from src.llm.client import CostLimitExceeded, LLMClient
-from src.output.jsonl import ErrorEvent, emit
-from src.tools.registry import ToolRegistry
+from agent.config.defaults import CONFIG
+from agent.runtime.loop import run_agent_loop
+from agent.llm.client import CostLimitExceeded, LLMClient
+from agent.output.jsonl import ErrorEvent, emit
+from agent.tools.registry import ToolRegistry
 
 PRIVATE_CHUTES_API_KEY = ""
 os.environ["CHUTES_API_KEY"] = PRIVATE_CHUTES_API_KEY
@@ -138,14 +137,6 @@ def main():
     parser = argparse.ArgumentParser(description="SuperAgent for Term Challenge SDK 3.0")
     parser.add_argument("--instruction", required=True, help="Task instruction from validator")
     args = parser.parse_args()
-
-    _log("=" * 60)
-    _log("SuperAgent Starting (SDK 3.0 - Chutes API)")
-    _log("=" * 60)
-    _log(f"Model: {CONFIG['model']}")
-    _log(f"Reasoning effort: {CONFIG.get('reasoning_effort', 'default')}")
-    _log(f"Instruction: {args.instruction[:200]}...")
-    _log("-" * 60)
 
     # Initialize components
     start_time = time.time()

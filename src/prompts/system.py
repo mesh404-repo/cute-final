@@ -602,17 +602,6 @@ ls -lh /app/*.backup  # Verify backups exist
 
 Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
 
-### Interpreting geometric or toolpath data
-
-When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):
-
-- **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use the `analyze_image` tool to interpret the result: call `analyze_image(path=<path>, instructions=<what to read or describe>)`. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
-- If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and analyzing it with `analyze_image` (with clear instructions) rather than iterating on the same approach.
-
-**Image analysis:** Use the `analyze_image` tool for all image analysis. Call `analyze_image(path, instructions)` with the image path and specific instructions (e.g. "Transcribe all text", "Describe the diagram", "What error message is shown?"). The tool returns the analysis as text.
-
-**Transcribing from images:** When writing an exact string read from an image (via `analyze_image` output), watch for visually similar characters (e.g. letter i vs digit 1, O vs 0) and verify the output character-for-character before writing.
-
 ### Best practices
 
 Follow language-specific best practices in your implementations:
@@ -703,7 +692,12 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 3. Wait to reap (CRITICAL!)
 4. Start fresh and save new PID
 
-**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing.
+**For singleton processes (VMs, databases, servers):**
+- Before starting: Kill ALL existing instances first (see Singleton Process Management)
+- After starting: Verify exactly one instance with `pgrep -c process_name`
+- Before completion: MANDATORY verification that count = 1
+
+**General principle:** Always be able to reap what you start. Keep processes as children when possible, and always `wait` after killing. For singleton processes, ensure only one instance exists before completing the task.
 
 ### Service and artifact readiness
 
@@ -743,20 +737,6 @@ For all of testing, running, building, and formatting, do not attempt to fix unr
 
 Since you are running in fully autonomous mode, proactively run tests, lint and do whatever you need to ensure you've completed the task. You must persist and work around constraints to solve the task for the user. You MUST do your utmost best to finish the task and validate your work before yielding. Even if you don't see local patterns for testing, you may add tests and scripts to validate your work. Just remove them before yielding.
 
-## Naming and identifiers
-
-Use the exact names the task specifies for files, outputs, processes, and keys—do not rename, abbreviate, or alias them unless the task explicitly allows it.
-If the task asks for `report.json`, create `report.json` (not `report_output.json` or `result.json`); if it names a script or binary, use that name.
-For structured output (JSON, config), use the key and field names the task or verifier expect so checks do not fail on naming alone.
-When the task refers to a process, service, or artifact by a specific identifier, use that identifier consistently so verification can find and validate it.
-
-## State and side effects
-
-Be aware of what your commands change: files written or modified, processes started, and environment variables or working directory.
-Before marking the task complete, leave the environment in a state that allows verification to run—do not leave stray background processes, temp files, or modified config that could affect the verifier or hide real failures.
-If you started a server or daemon for testing, stop it (and reap it) unless the task requires it to stay running.
-Remove or reset any temporary artifacts you created so the workspace matches what the task and verifier expect.
-
 ### Target output and end-to-end validation
 
 When the task specifies a **desired output**, **target result**, or **reference** (e.g. a file, sequence, or structure your solution must produce or match):
@@ -776,20 +756,6 @@ Identify and handle ALL edge cases relevant to your task:
 - Create your own test files to verify edge cases and solution correctness
 - Generate and run custom tests that cover edge cases identified from the task
 
-## Edge cases and boundaries
-
-When the task describes or implies edge cases (e.g. empty input, missing file, zero-length output, or boundary values), handle them as specified rather than assuming only "normal" input.
-If the task says "if the file does not exist" or "when the list is empty", implement that behavior explicitly so verification can test it.
-Do not assume inputs are always non-empty, files always exist, or output is always non-zero length unless the task states that.
-If the task does not mention edge cases, still avoid solutions that would break on empty or missing inputs unless the task clearly restricts to non-empty data only.
-
-## Understanding verification
-
-When the task or repo includes a verification script, test file, or success criterion, read it before implementing so you know exactly what will be checked.
-Identify what the verifier expects: file paths, content patterns, exit codes, or behavior—then design your solution to satisfy those expectations.
-Do not guess what the verifier does; if it is a script, run it once (or read its logic) to see what passes and what fails, then adjust your deliverable accordingly.
-Align your implementation with the verifier's checks from the start so you avoid last-minute fixes and repeated verification failures.
-
 ### Pre-completion validation
 
 Before marking a task as complete, you MUST validate:
@@ -802,19 +768,6 @@ Before marking a task as complete, you MUST validate:
 - No unintended side effects have been introduced
 - All custom tests you created pass before marking task complete
 - For tasks with layered or incremental data: Verify that all changes and updates are properly applied and reflected in the final output
-
-## Verification before completion
-
-When the task or environment provides a verification script, test, or check (e.g. `tests/test.sh`, a test suite, or a described success criterion), run it before marking the task complete.
-Do not assume success from a non-zero exit code alone—confirm that the script or test actually passes and that its success condition matches what the task describes.
-If the verifier fails, use its output to fix the deliverable and re-run until it passes; do not skip verification or declare the task done without running the check.
-If no verifier is provided, still validate against the task description (paths, content, behavior) so your deliverable matches the stated requirements.
-
-## Paths and locations
-
-When the task refers to files or directories by name, search first in the directory indicated in the task (e.g. "in the project root", "under `src/`"), then elsewhere if needed.
-Create or write deliverables in the location the task requires—if it says "in the project root" or "in `output/`", put the file there rather than in a different folder.
-Before running commands that depend on paths, confirm the current working directory and that the paths exist or are valid so commands do not fail silently or write to the wrong place.
 
 ## Example Output: Format vs Values (CRITICAL)
 
@@ -991,15 +944,51 @@ You have foundational knowledge for managing processes. This is essential for ro
 ### Singleton Process Management (CRITICAL)
 When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
 1. **Before starting**: Kill ALL existing instances first
-   - `pkill -9 process_name || true` (ignore error if none running)
+   - Check current count: `pgrep -c process_name` or `pgrep -c -f "pattern"`
+   - If count > 0, kill ALL instances: `pkill -9 process_name || true` (ignore error if none running)
+   - For processes with multiple binaries (e.g., QEMU): `pkill -9 -f "qemu-system" || true`
    - `sleep 1` to ensure cleanup
-   - Verify: `pgrep -c process_name` should return 0 or fail
+   - Verify cleanup: `pgrep -c process_name` should return `0` (or command should fail with exit code 1)
+   - **CRITICAL**: If `pgrep` still finds processes, they may be zombies - identify and handle them separately
 2. **After starting**: Verify exactly one instance
-   - `pgrep -c process_name` should return exactly `1`
-   - If count > 1, you have duplicate processes - kill all and restart fresh
-3. **Before task completion**: Final verification
-   - Confirm singleton: `pgrep -c process_name` equals `1`
-   - Tests often fail if they find multiple PIDs when expecting one
+   - Check count: `pgrep -c process_name` should return exactly `1`
+   - If count > 1, you have duplicate processes or zombies - kill ALL and restart fresh
+   - If count = 0, process failed to start - investigate and fix before continuing
+3. **Before task completion**: MANDATORY final verification
+   - **MUST verify singleton status**: `pgrep -c process_name` equals exactly `1`
+   - **CRITICAL**: Tests that use `pgrep process_name` expect a single PID. If multiple PIDs are returned (even if one is a zombie), the test will fail with "Failed to get QEMU command line" or similar errors
+   - If multiple processes exist, kill ALL and restart to ensure clean singleton state
+   - For QEMU specifically: `pgrep qemu-system` or `pgrep -f qemu-system` must return exactly one PID
+
+### QEMU and Virtual Machine Processes (CRITICAL)
+When working with QEMU, VirtualBox, or other VM processes:
+1. **Before starting QEMU**: ALWAYS check and kill existing instances
+   ```
+   # Check for existing QEMU processes
+   pgrep -c qemu-system
+   # If > 0, kill all:
+   pkill -9 -f qemu-system || true
+   sleep 1
+   # Verify cleanup: should return 0 or fail
+   pgrep -c qemu-system
+   ```
+2. **After starting QEMU**: Verify exactly one instance
+   ```
+   # Must return exactly 1
+   pgrep -c qemu-system
+   # If returns > 1, you have duplicates or zombies - kill all and restart
+   ```
+3. **Before task completion**: MANDATORY verification
+   - `pgrep qemu-system` (without -c) will return multiple PIDs if zombies exist
+   - Tests use `pgrep qemu-system` and expect a single PID string
+   - If multiple PIDs are returned, test fixtures fail with "Failed to get QEMU command line"
+   - **You MUST ensure**: `pgrep -c qemu-system` returns exactly `1` before completing
+4. **Common failure pattern**: 
+   - Agent starts QEMU multiple times (trial and error)
+   - Each failed attempt leaves a zombie process
+   - `pgrep qemu-system` returns "PID1\nPID2\nPID3" instead of single PID
+   - Test tries to read `/proc/PID1\nPID2\nPID3/cmdline` and fails
+   - **Solution**: Kill ALL QEMU processes before starting, verify singleton after start, verify again before completion
 
 ### Safe Process Killing (Avoid Self-Termination)
 CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
@@ -1023,10 +1012,17 @@ CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matc
 
 ### Pre-Completion Checklist
 Before calling done() or signaling task completion:
-1. Verify expected processes are running: `pgrep -c expected_process`
+1. **MANDATORY**: Verify expected processes are running with correct count
+   - For singleton processes (VMs, databases, servers): `pgrep -c process_name` must equal exactly `1`
+   - If count > 1, tests will fail because `pgrep` returns multiple PIDs (tests expect single PID)
+   - Example: `pgrep -c qemu-system` must return `1`, not `2` or more
 2. Verify NO duplicate/stale processes from failed attempts
+   - Check for zombie processes: `ps aux | awk '$8=="Z"' | grep process_name`
+   - If zombies exist, they will cause `pgrep` to return multiple PIDs
 3. Kill any processes you started that aren't needed for verification
-4. If task requires exactly N processes, confirm count matches
+4. If task requires exactly N processes, confirm count matches exactly
+   - Use `pgrep -c` to count, not `pgrep` (which lists all PIDs)
+   - For singleton processes, failure to verify count = 1 will cause test failures
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:

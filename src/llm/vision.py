@@ -63,7 +63,7 @@ def analyze_image_with_instructions(
     client = get_vision_client()
 
     retry = 0
-    model = DEEPSEEK_3_2_TEE
+    model = KIMI_2_5_TEE
     error_msg = ""
     while retry < 3:
         try:

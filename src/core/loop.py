@@ -304,7 +304,7 @@ def run_agent_loop(
                     if reasoning_effort and reasoning_effort != "none":
                         extra_body["reasoning"] = {"effort": reasoning_effort}
                     
-                    response = llm.chat(
+                    response = llm.chat_stream(
                         cached_messages,
                         tools=tool_specs,
                         max_tokens=config.get("max_tokens", 16384),
@@ -346,12 +346,13 @@ def run_agent_loop(
                         messages = copy.deepcopy(prev_messages)
                         cached_messages = _apply_caching(messages, enabled=cache_enabled)
                     
-                    model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
-                    main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
-                    _log(f"Switching to model: {main_model}")
+                    if attempt % 2 == 0:
+                        model_index = REASING_MODELS.index(main_model) if main_model in REASING_MODELS else -1
+                        main_model = REASING_MODELS[(model_index + 1) % len(REASING_MODELS)]
+                        _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 2 * attempt  # 10s, 20s, 30s, 40s
+                        wait_time = 10 * attempt  # 10s, 20s, 30s, 40s
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -365,7 +366,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 2 * attempt
+                        wait_time = 10 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

@@ -701,6 +701,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 
 ### Service and artifact readiness
 
+- **Configuration before startup**: Before starting or configuring ANY service, read its existing configuration files to understand the current setup. Do NOT blindly overwrite config files — understand the full include chain and existing routing rules first.
 - For servers, VMs, or daemons: prefer spawn_process to start them, then wait_for_port to confirm readiness. Inspect logs via read_file or shell.
 - When a program must run until a specific file or artifact appears (image, log, socket): use run_until_file or wait_for_file instead of sleep loops. Do not throttle output with `| head`/`| tail`; redirect to a log file and use the wait tools.
 - When a task requires exactly one instance of a process: kill all existing instances first (e.g. `pkill -9 process_name || true`, then `sleep 1`), verify with `pgrep -c process_name` (should be 0), then start. After starting, confirm exactly one instance.
@@ -964,6 +965,29 @@ When a service requires control sockets (e.g., management consoles, monitor sock
 - **Use conventional locations**: Place Unix domain sockets in standard temporary directories (e.g., `/tmp/`) rather than application-specific paths. Verification scripts and external tooling typically look in well-known locations.
 - **Follow conventions from the task**: If the task mentions external monitoring, automated testing, or programmatic control, ensure the control interface is accessible from the standard path. Do not invent custom socket directories unless the task explicitly requires it.
 - **Verify socket accessibility**: After starting the service, confirm the socket exists and is connectable (e.g., `test -S /tmp/my-service.sock`).
+
+### Service Configuration Discovery (CRITICAL - READ BEFORE MODIFYING ANY CONFIG)
+When configuring or modifying any existing service (web servers, proxies, databases, etc.):
+
+1. **Read the FULL existing configuration FIRST**: Before writing or modifying ANY configuration file, ALWAYS read the current main config to understand the existing setup.
+   - Read the main config file first (e.g., `nginx.conf`, `httpd.conf`, `my.cnf`)
+   - Understand the include chain: which directories/files are actually loaded?
+   - Check for existing server blocks, proxy rules, upstream definitions, port bindings
+   - **Common trap**: Writing to `/etc/nginx/sites-available/` is useless if the main `nginx.conf` does NOT include `sites-enabled/` — always verify the include chain
+
+2. **Work WITH existing configurations, not against them**: If an existing config already has proxy rules, port bindings, or service routing, LEVERAGE them instead of overwriting:
+   - If the config already proxies to a specific port, start your backend service on THAT port
+   - If there's an existing reverse proxy pattern, use it rather than rewriting from scratch
+   - Adapting to the existing config is faster and less error-prone than replacing it
+
+3. **Understand what "web interface" or "remote access" means for a service**:
+   - A static HTML info page is NOT a functional web interface for remote access
+   - For VNC services: you need a web-to-VNC bridge (e.g., websockify + noVNC) to provide real browser-based access
+   - For terminal services: you need a web terminal emulator
+   - For any TCP service: you typically need a protocol bridge (WebSocket proxy, etc.)
+   - Check if bridging tools (websockify, noVNC, ttyd, etc.) are already installed before installing them
+
+4. **If an existing config breaks your setup**: Understand WHY it breaks before replacing it. Fix the root cause (e.g., start the expected backend) rather than rewriting the whole config.
 
 ### Long-Running Daemons and Background Services
 When starting any daemon, server, VM, or background service:

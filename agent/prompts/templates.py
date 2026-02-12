@@ -90,11 +90,20 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 4. If ANY test fails, analyze the failure, fix your solution, and re-run the tests
 5. DO NOT give up if tests fail - iterate until all tests pass
 
+### 4.5. Service & Network Accessibility (if task involves services/servers/web interfaces)
+If the task required setting up services, servers, or web interfaces:
+1. **Test actual accessibility**: For EACH service/port mentioned in the task, verify it responds correctly with real content, NOT error pages (502, 503, 404). If you get a gateway error, the service is NOT working — investigate and fix.
+2. **Verify the full chain**: If a proxy forwards to a backend, verify BOTH the proxy AND the backend are working
+   - Check the proxy returns real content (not gateway errors)
+   - Check the backend is actually running on the expected port
+3. **Verify functional interfaces**: If the task says "web interface for remote access", verify the web page actually provides interactive access (not just a static info page)
+   - A static HTML page showing status info is NOT a "web interface for remote access"
+   - The interface must provide actual interactive functionality
+
 ### 5. Edge Cases & Quality
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
-- If you performed a calibration or axis conversion, did you try BOTH possible calibration directions? Are ALL fitted parameters (not just positions — also amplitudes, widths, baselines/offsets) physically reasonable and mutually consistent? If baseline/offset values seem inverted or swapped between features, your calibration axis direction is likely wrong — redo with the opposite assignment.
 
 ### 6. Final Decision
 After completing the above verification:

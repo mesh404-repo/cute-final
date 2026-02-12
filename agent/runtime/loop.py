@@ -296,7 +296,7 @@ def run_agent_loop(
             # ================================================================
             # Call LLM with retry logic
             # ================================================================
-            max_retries = 5
+            max_retries = 8
             response = None
 
             for attempt in range(1, max_retries + 1):

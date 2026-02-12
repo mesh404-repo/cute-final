@@ -614,7 +614,7 @@ Partial output before timeout:
     def _execute_finish(self, args: dict[str, Any]) -> ToolResult:
         """Signal task completion with a summary."""
         summary = args.get("summary", "")
-        from agent.tools.finish import execute_finish
+        from src.tools.finish import execute_finish
         return execute_finish(summary)
 
     def _execute_update_plan(self, args: dict[str, Any]) -> ToolResult:

@@ -61,7 +61,7 @@ def analyze_image(
 
     try:
         from agent.llm.vision import analyze_image_with_instructions
-        text, _cost = analyze_image_with_instructions(image_content, instructions.strip())
+        text = analyze_image_with_instructions(image_content, instructions.strip())
         return ToolResult(success=True, output=text)
     except ValueError as e:
         return ToolResult(success=False, output=str(e))

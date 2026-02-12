@@ -63,14 +63,13 @@ def analyze_image_with_instructions(
     client = get_vision_client()
 
     retry = 0
-    model = DEEPSEEK_3_2_TEE
+    model = KIMI_2_5_TEE
     error_msg = ""
     while retry < 3:
         try:
             response = client.chat(messages, model=model, max_tokens=4096)
             text = (response.text or "").strip()
-            cost = getattr(response, "cost", 0.0)
-            return text or "[Vision model returned no content.]", cost
+            return text or "[Vision model returned no content.]"
         except LLMError as e:
             error_msg = e.message
 
@@ -81,4 +80,4 @@ def analyze_image_with_instructions(
 
         time.sleep(4)        
     
-    return f"[Image analysis failed: {error_msg}]", 0.0
+    return f"[Image analysis failed: {error_msg}]"

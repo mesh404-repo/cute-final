@@ -22,7 +22,7 @@ import json
 import copy
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from agent.runtime.compaction import (
     manage_context,
@@ -71,21 +71,6 @@ def _log(msg: str) -> None:
     """Log to stderr."""
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
-
-
-def _append_assistant_with_reasoning(
-    messages: List[Dict[str, Any]],
-    response: Any,
-    response_text: str,
-) -> None:
-    """Append assistant message, preserving reasoning_details/reasoning when present."""
-    msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
-    if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
-        msg["reasoning_details"] = response.reasoning_details
-    if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
-        msg["reasoning"] = response.reasoning
-    messages.append(msg)
-
 
 def _add_cache_control_to_message(
     msg: Dict[str, Any],
@@ -354,7 +339,7 @@ def run_agent_loop(
                         _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 4 * attempt  # 10s, 20s, 30s, 40s
+                        wait_time = 8 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -367,7 +352,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 4 * attempt
+                        wait_time = 8 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

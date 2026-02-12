@@ -336,201 +336,6 @@ class SystemPrompt:
 
 
 # =============================================================================
-# Builder Pattern
-# =============================================================================
-
-class SystemPromptBuilder:
-    """Builder for system prompts.
-    
-    Provides a fluent interface for constructing SystemPrompt instances.
-    
-    Example:
-        prompt = (SystemPromptBuilder()
-            .persona("You are a helpful assistant.")
-            .base("Help the user with their tasks.")
-            .variable("name", "Alice")
-            .code_execution()
-            .build())
-    """
-    
-    def __init__(self) -> None:
-        """Create a new builder."""
-        self._prompt = SystemPrompt()
-    
-    def base(self, base: str) -> SystemPromptBuilder:
-        """Set base prompt.
-        
-        Args:
-            base: Base prompt text.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.base = base
-        return self
-    
-    def persona(self, persona: str) -> SystemPromptBuilder:
-        """Set persona.
-        
-        Args:
-            persona: Persona/role description.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.persona = persona
-        return self
-    
-    def section(
-        self,
-        name: str,
-        content: str,
-        priority: int = 0,
-        enabled: bool = True
-    ) -> SystemPromptBuilder:
-        """Add a section.
-        
-        Args:
-            name: Section name (used as header).
-            content: Section content.
-            priority: Priority (higher = earlier in prompt).
-            enabled: Whether section is enabled.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.sections.append(
-            PromptSection(
-                name=name,
-                content=content,
-                priority=priority,
-                enabled=enabled
-            )
-        )
-        return self
-    
-    def variable(self, key: str, value: str) -> SystemPromptBuilder:
-        """Add a variable.
-        
-        Args:
-            key: Variable name.
-            value: Variable value.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.variables[key] = value
-        return self
-    
-    def custom_instructions(self, instructions: str) -> SystemPromptBuilder:
-        """Set custom instructions.
-        
-        Args:
-            instructions: Custom instructions text.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.custom_instructions = instructions
-        return self
-    
-    def code_execution(self) -> SystemPromptBuilder:
-        """Enable code execution context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.code_execution = True
-        return self
-    
-    def file_operations(self) -> SystemPromptBuilder:
-        """Enable file operations context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.file_operations = True
-        return self
-    
-    def web_search(self) -> SystemPromptBuilder:
-        """Enable web search context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.web_search = True
-        return self
-    
-    def build(self) -> SystemPrompt:
-        """Build the system prompt.
-        
-        Returns:
-            Configured SystemPrompt instance.
-        """
-        self._prompt._recalculate_tokens()
-        return self._prompt
-
-
-# =============================================================================
-# Presets
-# =============================================================================
-
-class Presets:
-    """Predefined system prompts for common use cases."""
-    
-    @staticmethod
-    def coding_assistant() -> SystemPrompt:
-        """Default coding assistant prompt.
-        
-        Returns:
-            SystemPrompt configured for coding assistance.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are Fabric, an expert AI coding assistant.")
-            .base(CODING_ASSISTANT_BASE)
-            .code_execution()
-            .file_operations()
-            .build())
-    
-    @staticmethod
-    def research_assistant() -> SystemPrompt:
-        """Research assistant prompt.
-        
-        Returns:
-            SystemPrompt configured for research assistance.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are a helpful research assistant with access to web search.")
-            .base("Help the user find and analyze information. Cite sources when possible.")
-            .web_search()
-            .build())
-    
-    @staticmethod
-    def code_reviewer() -> SystemPrompt:
-        """Code review prompt.
-        
-        Returns:
-            SystemPrompt configured for code review.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are an expert code reviewer.")
-            .base(CODE_REVIEWER_BASE)
-            .file_operations()
-            .build())
-    
-    @staticmethod
-    def minimal() -> SystemPrompt:
-        """Minimal assistant prompt.
-        
-        Returns:
-            SystemPrompt with minimal configuration.
-        """
-        return (SystemPromptBuilder()
-            .base("You are a helpful assistant. Be concise.")
-            .build())
-
-
-# =============================================================================
 # Legacy API
 # =============================================================================
 
@@ -601,17 +406,6 @@ ls -lh /app/*.backup  # Verify backups exist
 ```
 
 Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
-
-### Interpreting geometric or toolpath data
-
-When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):
-
-- **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use the `analyze_image` tool to interpret the result: call `analyze_image(path=<path>, instructions=<what to read or describe>)`. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
-- If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and analyzing it with `analyze_image` (with clear instructions) rather than iterating on the same approach.
-
-**Image analysis:** Use the `analyze_image` tool for all image analysis. Call `analyze_image(path, instructions)` with the image path and specific instructions (e.g. "Transcribe all text", "Describe the diagram", "What error message is shown?"). The tool returns the analysis as text.
-
-**Transcribing from images:** When writing an exact string read from an image (via `analyze_image` output), watch for visually similar characters (e.g. letter i vs digit 1, O vs 0) and verify the output character-for-character before writing.
 
 ### Best practices
 
@@ -712,6 +506,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 
 ### Service and artifact readiness
 
+- **Configuration before startup**: Before starting or configuring ANY service, read its existing configuration files to understand the current setup. Do NOT blindly overwrite config files — understand the full include chain and existing routing rules first.
 - For servers, VMs, or daemons: prefer spawn_process to start them, then wait_for_port to confirm readiness. Inspect logs via read_file or shell.
 - When a program must run until a specific file or artifact appears (image, log, socket): use run_until_file or wait_for_file instead of sleep loops. Do not throttle output with `| head`/`| tail`; redirect to a log file and use the wait tools.
 - When a task requires exactly one instance of a process: kill all existing instances first (e.g. `pkill -9 process_name || true`, then `sleep 1`), verify with `pgrep -c process_name` (should be 0), then start. After starting, confirm exactly one instance.
@@ -953,11 +748,11 @@ You have foundational knowledge for managing processes. This is essential for ro
 - Verify restart: check PID changed and service responds
 
 ### Singleton Process Management (CRITICAL)
-When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
+When a task requires exactly ONE instance of a process (e.g., a virtual machine, database, web server, message broker):
 1. **Before starting**: Kill ALL existing instances first
    - Check current count: `pgrep -c process_name` or `pgrep -c -f "pattern"`
    - If count > 0, kill ALL instances: `pkill -9 process_name || true` (ignore error if none running)
-   - For processes with multiple binaries (e.g., QEMU): `pkill -9 -f "qemu-system" || true`
+   - For processes with multiple binary variants: `pkill -9 -f "binary_prefix" || true`
    - `sleep 1` to ensure cleanup
    - Verify cleanup: `pgrep -c process_name` should return `0` (or command should fail with exit code 1)
    - **CRITICAL**: If `pgrep` still finds processes, they may be zombies - identify and handle them separately
@@ -967,49 +762,75 @@ When a task requires exactly ONE instance of a process (e.g., a VM, database, se
    - If count = 0, process failed to start - investigate and fix before continuing
 3. **Before task completion**: MANDATORY final verification
    - **MUST verify singleton status**: `pgrep -c process_name` equals exactly `1`
-   - **CRITICAL**: Tests that use `pgrep process_name` expect a single PID. If multiple PIDs are returned (even if one is a zombie), the test will fail with "Failed to get QEMU command line" or similar errors
+   - **CRITICAL**: Verification tooling that uses `pgrep process_name` expects a single PID. If multiple PIDs are returned (even if one is a zombie), verification will fail because it cannot determine which process is the real one
    - If multiple processes exist, kill ALL and restart to ensure clean singleton state
-   - For QEMU specifically: `pgrep qemu-system` or `pgrep -f qemu-system` must return exactly one PID
 
-### QEMU and Virtual Machine Processes (CRITICAL)
-When working with QEMU, VirtualBox, or other VM processes:
-- **Monitor and keyboard sockets**: When the task requires QEMU to accept programmatic keyboard input (e.g. for automated testing or verification), place the QEMU monitor socket where verification scripts expect it. Use the conventional path `/tmp/qemu-monitor.sock` for the monitor (e.g. `-monitor unix:/tmp/qemu-monitor.sock,server,nowait`). Do not use app-specific or custom directories (e.g. `/app/run/`) for these sockets unless the task explicitly specifies a path; verification and test harnesses typically connect to the standard location.
-1. **Before starting QEMU**: ALWAYS check and kill existing instances
+### IPC Sockets and Control Interfaces
+When a service requires control sockets (e.g., management consoles, monitor sockets, RPC endpoints):
+- **Use conventional locations**: Place Unix domain sockets in standard temporary directories (e.g., `/tmp/`) rather than application-specific paths. Verification scripts and external tooling typically look in well-known locations.
+- **Follow conventions from the task**: If the task mentions external monitoring, automated testing, or programmatic control, ensure the control interface is accessible from the standard path. Do not invent custom socket directories unless the task explicitly requires it.
+- **Verify socket accessibility**: After starting the service, confirm the socket exists and is connectable (e.g., `test -S /tmp/my-service.sock`).
+
+### Service Configuration Discovery (CRITICAL - READ BEFORE MODIFYING ANY CONFIG)
+When configuring or modifying any existing service (web servers, proxies, databases, etc.):
+
+1. **Read the FULL existing configuration FIRST**: Before writing or modifying ANY configuration file, ALWAYS read the current main config to understand the existing setup.
+   - Read the main config file first (e.g., `nginx.conf`, `httpd.conf`, `my.cnf`)
+   - Understand the include chain: which directories/files are actually loaded?
+   - Check for existing server blocks, proxy rules, upstream definitions, port bindings
+   - **Common trap**: Writing to `/etc/nginx/sites-available/` is useless if the main `nginx.conf` does NOT include `sites-enabled/` — always verify the include chain
+
+2. **Work WITH existing configurations, not against them**: If an existing config already has proxy rules, port bindings, or service routing, LEVERAGE them instead of overwriting:
+   - If the config already proxies to a specific port, start your backend service on THAT port
+   - If there's an existing reverse proxy pattern, use it rather than rewriting from scratch
+   - Adapting to the existing config is faster and less error-prone than replacing it
+
+3. **Understand what "web interface" or "remote access" means for a service**:
+   - A static HTML info page is NOT a functional web interface for remote access
+   - For VNC services: you need a web-to-VNC bridge (e.g., websockify + noVNC) to provide real browser-based access
+   - For terminal services: you need a web terminal emulator
+   - For any TCP service: you typically need a protocol bridge (WebSocket proxy, etc.)
+   - Check if bridging tools (websockify, noVNC, ttyd, etc.) are already installed before installing them
+
+4. **If an existing config breaks your setup**: Understand WHY it breaks before replacing it. Fix the root cause (e.g., start the expected backend) rather than rewriting the whole config.
+
+### Long-Running Daemons and Background Services
+When starting any daemon, server, VM, or background service:
+1. **Before starting**: ALWAYS check and kill existing instances
    ```
-   # Check for existing QEMU processes
-   pgrep -c qemu-system
+   # Check for existing processes of this type
+   pgrep -c service_name
    # If > 0, kill all:
-   pkill -9 -f qemu-system || true
+   pkill -9 -f service_name || true
    sleep 1
    # Verify cleanup: should return 0 or fail
-   pgrep -c qemu-system
+   pgrep -c service_name
    ```
-2. **After starting QEMU**: Verify exactly one instance
+2. **After starting**: Verify exactly one instance
    ```
    # Must return exactly 1
-   pgrep -c qemu-system
+   pgrep -c service_name
    # If returns > 1, you have duplicates or zombies - kill all and restart
    ```
 3. **Before task completion**: MANDATORY verification
-   - `pgrep qemu-system` (without -c) will return multiple PIDs if zombies exist
-   - Tests use `pgrep qemu-system` and expect a single PID string
-   - If multiple PIDs are returned, test fixtures fail with "Failed to get QEMU command line"
-   - **You MUST ensure**: `pgrep -c qemu-system` returns exactly `1` before completing
-4. **Common failure pattern**: 
-   - Agent starts QEMU multiple times (trial and error)
-   - Each failed attempt leaves a zombie process
-   - `pgrep qemu-system` returns "PID1\nPID2\nPID3" instead of single PID
-   - Test tries to read `/proc/PID1\nPID2\nPID3/cmdline` and fails
-   - **Solution**: Kill ALL QEMU processes before starting, verify singleton after start, verify again before completion
+   - `pgrep service_name` (without -c) will return multiple PIDs if zombies exist
+   - Verification tooling expects a single PID; multiple PIDs cause failures
+   - **You MUST ensure**: `pgrep -c service_name` returns exactly `1` before completing
+4. **Common failure pattern**:
+   - Process started multiple times through trial and error
+   - Each failed attempt leaves a zombie or orphan
+   - `pgrep service_name` returns multiple PIDs instead of one
+   - Verification tries to inspect a concatenated PID string and fails
+   - **Solution**: Kill ALL matching processes before starting, verify singleton after start, verify again before completion
 
 ### Safe Process Killing (Avoid Self-Termination)
 CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
-- Your process may contain task instructions mentioning process names (e.g., "start nginx" in your args)
+- Your process may contain task instructions mentioning process names (e.g., "start myservice" in your args)
 - Safe approach: Get specific PIDs first, then kill by PID
   ```
-  # Instead of: pkill -f nginx (DANGEROUS - may match your own process)
+  # Instead of: pkill -f myservice (DANGEROUS - may match your own process)
   # Do this:
-  pgrep -x nginx | xargs -r kill -9
+  pgrep -x myservice | xargs -r kill -9
   # Or use exact binary name with -x flag for exact match
   ```
 - Alternatively, exclude your own PID: `pgrep -f pattern | grep -v $$ | xargs -r kill`
@@ -1025,16 +846,15 @@ CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matc
 ### Pre-Completion Checklist
 Before calling done() or signaling task completion:
 1. **MANDATORY**: Verify expected processes are running with correct count
-   - For singleton processes (VMs, databases, servers): `pgrep -c process_name` must equal exactly `1`
-   - If count > 1, tests will fail because `pgrep` returns multiple PIDs (tests expect single PID)
-   - Example: `pgrep -c qemu-system` must return `1`, not `2` or more
+   - For singleton processes (servers, daemons, background services): `pgrep -c process_name` must equal exactly `1`
+   - If count > 1, verification will fail because `pgrep` returns multiple PIDs (verification expects a single PID)
 2. Verify NO duplicate/stale processes from failed attempts
    - Check for zombie processes: `ps aux | awk '$8=="Z"' | grep process_name`
    - If zombies exist, they will cause `pgrep` to return multiple PIDs
 3. Kill any processes you started that aren't needed for verification
 4. If task requires exactly N processes, confirm count matches exactly
    - Use `pgrep -c` to count, not `pgrep` (which lists all PIDs)
-   - For singleton processes, failure to verify count = 1 will cause test failures
+   - For singleton processes, failure to verify count = 1 will cause verification failures
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:
@@ -1120,8 +940,6 @@ __all__ = [
     # Core classes
     "PromptSection",
     "SystemPrompt",
-    "SystemPromptBuilder",
-    "Presets",
     # Context strings
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",

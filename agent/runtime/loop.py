@@ -339,7 +339,7 @@ def run_agent_loop(
                         _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 8 * attempt
+                        wait_time = 10 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -352,7 +352,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 8 * attempt
+                        wait_time = 10 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

@@ -194,8 +194,6 @@ class ToolRegistry:
                 result = self._execute_grep(ctx, cwd, arguments)
             elif name == "apply_patch":
                 result = self._execute_apply_patch(cwd, arguments)
-            elif name == "view_image":
-                result = self._execute_view_image(cwd, arguments)
             elif name == "analyze_image":
                 result = self._execute_analyze_image(cwd, arguments)
             elif name == "image_info":
@@ -207,9 +205,7 @@ class ToolRegistry:
             elif name == "update_plan":
                 result = self._execute_update_plan(arguments)
             elif name == "web_search":
-                result = self._execute_web_search(arguments)
-            elif name == "transcript":
-                result = self._execute_transcript(arguments)        
+                result = self._execute_web_search(arguments)        
             elif name == "spawn_process":
                 result = self._execute_spawn_process(cwd, arguments)
             elif name == "kill_process":
@@ -543,20 +539,7 @@ Partial output before timeout:
         from src.tools.apply_patch import ApplyPatchTool
         
         tool = ApplyPatchTool(cwd)
-        return tool.execute(patch=patch)
-    
-    def _execute_view_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """View an image file."""
-        path = args.get("path", "")
-        
-        if not path:
-            return ToolResult.invalid(
-                "Missing required parameter 'path'. "
-                "Usage: view_image(path: str)"
-            )
-        
-        from src.tools.view_image import view_image
-        return view_image(path, cwd)
+        return tool.execute(patch=patch)    
 
     def _execute_analyze_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Analyze an image with the vision model using the given instructions."""
@@ -658,89 +641,6 @@ Partial output before timeout:
             lines.append(f"\nReason: {explanation}")
         
         return ToolResult.ok("\n".join(lines))    
-    
-    def _execute_transcript(self, args: dict[str, Any]) -> ToolResult:
-        """Analyze video using Kimi K2.5 TEE via Chutes (LLMClient)."""
-        from src.llm.client import LLMClient, LLMError
-
-        video_url = args.get("url", "")
-        instruction = args.get("instruction", "")
-
-        if not video_url:
-            return ToolResult.invalid("No URL provided")
-
-        if not instruction:
-            return ToolResult.invalid(
-                "No instruction provided. You must specify what you want to extract from the video."
-            )
-
-        model = "deepseek-ai/DeepSeek-V3.2-TEE"
-        enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
-
-{instruction}
-
-
-OUTPUT FORMAT:
-- Follow the exact format specified in the instruction
-- One item per line (unless format specifies otherwise)
-- No additional text or explanations unless requested
-- Preserve exact spelling, capitalization, and formatting
-- Maintain the exact order as they appear
-
-Be thorough, complete, and accurate. Missing even one item or getting spelling/formatting wrong will cause failure."""
-
-        messages: List[Dict[str, Any]] = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": enhanced_prompt},
-                    {"type": "video_url", "video_url": {"url": video_url}},
-                ],
-            }
-        ]
-
-        try:
-            client = LLMClient(
-                model=model,
-                max_tokens=32000,
-                timeout=300.0,
-            )
-            try:
-                response = client.chat(messages, max_tokens=32000)
-            finally:
-                client.close()
-
-            transcript_text = (response.text or "").strip()
-            if not transcript_text:
-                return ToolResult.fail("Returned empty response")
-
-            output_parts = [
-                f"## Video Analysis: {video_url}",
-                f"**Instruction:** {instruction[:200]}{'...' if len(instruction) > 200 else ''}",
-                "",
-                "---",
-                "",
-                transcript_text,
-            ]
-
-            cache_path = self._save_to_platform_cache(
-                transcript_text,
-                extension="txt",
-                prefix="transcript",
-            )
-            output_parts.append(f"\n[Full transcript saved to: {cache_path}]")
-            output_parts.append(
-                "\n**NOTE: This analysis is COMPLETE. The full content is available in the saved file above.**"
-            )
-
-            return ToolResult.ok("\n".join(output_parts))
-
-        except LLMError as e:
-            return ToolResult.fail(f"API error: {e.code} - {e.message}")
-        except ValueError as e:
-            return ToolResult.fail(f"Config error: {e}")
-        except Exception as e:
-            return ToolResult.fail(f"Transcript failed: {e}")
     
     def _execute_web_search(self, args: dict[str, Any]) -> ToolResult:
         """Search the web for information."""

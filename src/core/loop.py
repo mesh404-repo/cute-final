@@ -44,7 +44,6 @@ from src.output.jsonl import (
 from src.prompts.system import get_system_prompt
 from src.prompts.templates import (
     VERIFICATION_PROMPT_TEMPLATE,
-    VERIFICATION_CONFIRMATION_TEMPLATE,
     TOOL_FAILURE_GUIDANCE_TEMPLATE,
     TOOL_INVALID_GUIDANCE_TEMPLATE,
 )
@@ -60,7 +59,6 @@ KIMI_K2_THINKING_TEE = "moonshotai/Kimi-K2-Thinking-TEE"
 REASING_MODELS = [    
     GLM_4_7_TEE,
     GLM_4_6_TEE,
-    KIMI_2_5_TEE,
     DEEPSEEK_3_2_TEE,
 ]
 
@@ -247,9 +245,6 @@ def run_agent_loop(
     total_output_tokens = 0
     total_cached_tokens = 0
     pending_completion = False
-    last_agent_message = ""
-    verification_phase: Optional[str] = None  # None | "first" | "confirmation"
-    verification_result = ""
     
     max_iterations = config.get("max_iterations", 200)
     cache_enabled = config.get("cache_enabled", True)
@@ -424,41 +419,13 @@ def run_agent_loop(
             if total_cost >= cost_limit:
                 break
 
-            # Verification workflow: first → confirmation → complete
-            if verification_phase == "confirmation":
-                # LLM confirmed using previous verification (or did missing-only checks)
-                _log("Task completion confirmed after verification confirmation")
 
-                if "task incomplete" in response_text.lower():
-                    verification_phase = None
-                    _append_assistant_with_reasoning(messages, response, response_text)
-                    messages.append({
-                        "role": "user",
-                        "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
-                    })
-                    _log("Task incomplete – requesting completion via tools")
-                    continue
+            if pending_completion:
                 break
 
-            if verification_phase == "first":
-                # First verification round just completed – store result, request confirmation
-                verification_result = response_text
-                verification_phase = "confirmation"
-                _append_assistant_with_reasoning(messages, response, response_text)
-
-                confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
-                    instruction=ctx.instruction,
-                    previous_verification_result=verification_result,
-                )
-                messages.append({
-                    "role": "user",
-                    "content": confirmation_prompt,
-                })
-                _log("Requesting confirmation: use previous verification, confirm or fix gaps only")
-                continue
-
             # No verification yet – request first self-verification
-            verification_phase = "first"
+            pending_completion = True
+
             _append_assistant_with_reasoning(messages, response, response_text)
 
             verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
@@ -561,7 +528,6 @@ def run_agent_loop(
                 )
             ))
             
-            _log(f"tool result: {output}")
             # Collect tool result
             tool_results.append({
                 "role": "tool",

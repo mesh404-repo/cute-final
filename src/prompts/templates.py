@@ -112,39 +112,6 @@ After completing the above verification:
 Proceed with verification now.
 </system-reminder>"""
 
-# Template for confirmation round after first verification
-VERIFICATION_CONFIRMATION_TEMPLATE = """<system-reminder>
-# Confirm Previous Verification - Use It, Then Complete or Fix Gaps Only
-
-You just completed a verification round. Below is your **previous verification result**. Use it.
-
-## Original Task:
-{instruction}
-
-## Your Previous Verification Result:
-```
-{previous_verification_result}
-```
-
-## What To Do Now:
-
-1. **Use the previous verification result** – Review it. Treat it as your verification summary.
-
-2. **Confirm correctness** – Decide: Was the previous verification successful? Did it cover all requirements and constraints from the task?
-
-3. **Choose ONE of:**
-   - **If previous verification was successful** (all requirements verified, nothing missing): Confirm that the task is complete. Do NOT use any tools. Just state that you confirm the verification and the task is done.
-   - **If there were missing verifications** (something was not checked, or a constraint was skipped): Use tools **ONLY** to perform those missing checks. Do not re-do verification you already did. Only address the gaps. After completing the missing verification(s), either confirm completion (no tools) or report what remains.
-
-4. **Do not repeat work** – Do not re-verify what you already verified. Only run tools for verifications that were missing.
-
-5. **If task incomplete** – When you determine the task is incomplete (missing verifications, unmet requirements, or unresolved issues), you MUST include the exact phrase **task incomplete** in your response.
-
-6. **Complete when ready** – Once you have confirmed (or completed missing verification and confirmed), respond without tool calls to finalize completion.
-
-Proceed: confirm using the previous result, or run only missing verifications, then complete.
-</system-reminder>"""
-
 # Template for shell command timeout errors
 SHELL_TIMEOUT_TEMPLATE = """Command timed out after {timeout}s.
 

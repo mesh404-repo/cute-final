@@ -332,7 +332,6 @@ def run_agent_loop(
                     raise  # Don't retry cost limit errors
 
                 except LLMError as e:
-                    last_error = e
                     error_msg = str(e.message) if hasattr(e, "message") else str(e)
                     _log(f"LLM error (attempt {attempt}/{max_retries}): {e.code} - {error_msg}")
 
@@ -435,7 +434,6 @@ def run_agent_loop(
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
         
-        # Preserve reasoning for models that support it (Kimi K2.5-TEE, etc.)
         if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
             assistant_msg["reasoning_details"] = response.reasoning_details
         if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):

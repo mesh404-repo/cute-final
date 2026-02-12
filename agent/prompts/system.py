@@ -704,7 +704,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 - For servers, VMs, or daemons: prefer spawn_process to start them, then wait_for_port to confirm readiness. Inspect logs via read_file or shell.
 - When a program must run until a specific file or artifact appears (image, log, socket): use run_until_file or wait_for_file instead of sleep loops. Do not throttle output with `| head`/`| tail`; redirect to a log file and use the wait tools.
 - When a task requires exactly one instance of a process: kill all existing instances first (e.g. `pkill -9 process_name || true`, then `sleep 1`), verify with `pgrep -c process_name` (should be 0), then start. After starting, confirm exactly one instance.
-- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x nginx | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
+- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x process_name | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
 - Before marking the task complete: verify expected processes are running, ensure no duplicate/stale processes from failed attempts, and kill any processes you started that aren't needed for verification.
 
 ## Artifacts and long-running programs
@@ -942,11 +942,11 @@ You have foundational knowledge for managing processes. This is essential for ro
 - Verify restart: check PID changed and service responds
 
 ### Singleton Process Management (CRITICAL)
-When a task requires exactly ONE instance of a process (e.g., a VM, database, server):
+When a task requires exactly ONE instance of a process (e.g., a virtual machine, database, web server, message broker):
 1. **Before starting**: Kill ALL existing instances first
    - Check current count: `pgrep -c process_name` or `pgrep -c -f "pattern"`
    - If count > 0, kill ALL instances: `pkill -9 process_name || true` (ignore error if none running)
-   - For processes with multiple binaries (e.g., QEMU): `pkill -9 -f "qemu-system" || true`
+   - For processes with multiple binary variants: `pkill -9 -f "binary_prefix" || true`
    - `sleep 1` to ensure cleanup
    - Verify cleanup: `pgrep -c process_name` should return `0` (or command should fail with exit code 1)
    - **CRITICAL**: If `pgrep` still finds processes, they may be zombies - identify and handle them separately
@@ -956,49 +956,52 @@ When a task requires exactly ONE instance of a process (e.g., a VM, database, se
    - If count = 0, process failed to start - investigate and fix before continuing
 3. **Before task completion**: MANDATORY final verification
    - **MUST verify singleton status**: `pgrep -c process_name` equals exactly `1`
-   - **CRITICAL**: Tests that use `pgrep process_name` expect a single PID. If multiple PIDs are returned (even if one is a zombie), the test will fail with "Failed to get QEMU command line" or similar errors
+   - **CRITICAL**: Verification tooling that uses `pgrep process_name` expects a single PID. If multiple PIDs are returned (even if one is a zombie), verification will fail because it cannot determine which process is the real one
    - If multiple processes exist, kill ALL and restart to ensure clean singleton state
-   - For QEMU specifically: `pgrep qemu-system` or `pgrep -f qemu-system` must return exactly one PID
 
-### QEMU and Virtual Machine Processes (CRITICAL)
-When working with QEMU, VirtualBox, or other VM processes:
-- **Monitor and keyboard sockets**: When the task requires QEMU to accept programmatic keyboard input (e.g. for automated testing or verification), place the QEMU monitor socket where verification scripts expect it. Use the conventional path `/tmp/qemu-monitor.sock` for the monitor (e.g. `-monitor unix:/tmp/qemu-monitor.sock,server,nowait`). Do not use app-specific or custom directories (e.g. `/app/run/`) for these sockets unless the task explicitly specifies a path; verification and test harnesses typically connect to the standard location.
-1. **Before starting QEMU**: ALWAYS check and kill existing instances
+### IPC Sockets and Control Interfaces
+When a service requires control sockets (e.g., management consoles, monitor sockets, RPC endpoints):
+- **Use conventional locations**: Place Unix domain sockets in standard temporary directories (e.g., `/tmp/`) rather than application-specific paths. Verification scripts and external tooling typically look in well-known locations.
+- **Follow conventions from the task**: If the task mentions external monitoring, automated testing, or programmatic control, ensure the control interface is accessible from the standard path. Do not invent custom socket directories unless the task explicitly requires it.
+- **Verify socket accessibility**: After starting the service, confirm the socket exists and is connectable (e.g., `test -S /tmp/my-service.sock`).
+
+### Long-Running Daemons and Background Services
+When starting any daemon, server, VM, or background service:
+1. **Before starting**: ALWAYS check and kill existing instances
    ```
-   # Check for existing QEMU processes
-   pgrep -c qemu-system
+   # Check for existing processes of this type
+   pgrep -c service_name
    # If > 0, kill all:
-   pkill -9 -f qemu-system || true
+   pkill -9 -f service_name || true
    sleep 1
    # Verify cleanup: should return 0 or fail
-   pgrep -c qemu-system
+   pgrep -c service_name
    ```
-2. **After starting QEMU**: Verify exactly one instance
+2. **After starting**: Verify exactly one instance
    ```
    # Must return exactly 1
-   pgrep -c qemu-system
+   pgrep -c service_name
    # If returns > 1, you have duplicates or zombies - kill all and restart
    ```
 3. **Before task completion**: MANDATORY verification
-   - `pgrep qemu-system` (without -c) will return multiple PIDs if zombies exist
-   - Tests use `pgrep qemu-system` and expect a single PID string
-   - If multiple PIDs are returned, test fixtures fail with "Failed to get QEMU command line"
-   - **You MUST ensure**: `pgrep -c qemu-system` returns exactly `1` before completing
-4. **Common failure pattern**: 
-   - Agent starts QEMU multiple times (trial and error)
-   - Each failed attempt leaves a zombie process
-   - `pgrep qemu-system` returns "PID1\nPID2\nPID3" instead of single PID
-   - Test tries to read `/proc/PID1\nPID2\nPID3/cmdline` and fails
-   - **Solution**: Kill ALL QEMU processes before starting, verify singleton after start, verify again before completion
+   - `pgrep service_name` (without -c) will return multiple PIDs if zombies exist
+   - Verification tooling expects a single PID; multiple PIDs cause failures
+   - **You MUST ensure**: `pgrep -c service_name` returns exactly `1` before completing
+4. **Common failure pattern**:
+   - Process started multiple times through trial and error
+   - Each failed attempt leaves a zombie or orphan
+   - `pgrep service_name` returns multiple PIDs instead of one
+   - Verification tries to inspect a concatenated PID string and fails
+   - **Solution**: Kill ALL matching processes before starting, verify singleton after start, verify again before completion
 
 ### Safe Process Killing (Avoid Self-Termination)
 CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matches your command line arguments.
-- Your process may contain task instructions mentioning process names (e.g., "start nginx" in your args)
+- Your process may contain task instructions mentioning process names (e.g., "start myservice" in your args)
 - Safe approach: Get specific PIDs first, then kill by PID
   ```
-  # Instead of: pkill -f nginx (DANGEROUS - may match your own process)
+  # Instead of: pkill -f myservice (DANGEROUS - may match your own process)
   # Do this:
-  pgrep -x nginx | xargs -r kill -9
+  pgrep -x myservice | xargs -r kill -9
   # Or use exact binary name with -x flag for exact match
   ```
 - Alternatively, exclude your own PID: `pgrep -f pattern | grep -v $$ | xargs -r kill`
@@ -1014,16 +1017,15 @@ CRITICAL: Broad `pkill -f pattern` can kill YOUR OWN PROCESS if the pattern matc
 ### Pre-Completion Checklist
 Before calling done() or signaling task completion:
 1. **MANDATORY**: Verify expected processes are running with correct count
-   - For singleton processes (VMs, databases, servers): `pgrep -c process_name` must equal exactly `1`
-   - If count > 1, tests will fail because `pgrep` returns multiple PIDs (tests expect single PID)
-   - Example: `pgrep -c qemu-system` must return `1`, not `2` or more
+   - For singleton processes (servers, daemons, background services): `pgrep -c process_name` must equal exactly `1`
+   - If count > 1, verification will fail because `pgrep` returns multiple PIDs (verification expects a single PID)
 2. Verify NO duplicate/stale processes from failed attempts
    - Check for zombie processes: `ps aux | awk '$8=="Z"' | grep process_name`
    - If zombies exist, they will cause `pgrep` to return multiple PIDs
 3. Kill any processes you started that aren't needed for verification
 4. If task requires exactly N processes, confirm count matches exactly
    - Use `pgrep -c` to count, not `pgrep` (which lists all PIDs)
-   - For singleton processes, failure to verify count = 1 will cause test failures
+   - For singleton processes, failure to verify count = 1 will cause verification failures
 
 ### Long-Running Process Principle (CRITICAL)
 Before starting ANY daemon, server, VM, or background service:

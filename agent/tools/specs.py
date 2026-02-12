@@ -220,41 +220,6 @@ Each step should be 5-7 words maximum.""",
     },
 }
 
-
-# Web search tool
-WEB_SEARCH_SPEC: dict[str, Any] = {
-    "name": "web_search",
-    "description": """Search the web for information, documentation, code examples, and solutions to help solve tasks.
-
-Use web search when:
-- You encounter unfamiliar technologies, libraries, frameworks, or APIs
-- You're stuck on a problem and need to find solutions or examples
-- You need documentation, tutorials, or code examples
-- You need to research how to accomplish a specific task
-- You're working with open source projects and need to understand patterns or best practices
-
-Be specific in queries: include library names, error messages, specific concepts, or task descriptions. Use search_type='code' for code examples, 'docs' for documentation, or 'general' for broad searches.""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "The search query - be specific and include relevant keywords, library names, or task descriptions",
-            },
-            "num_results": {
-                "type": "number",
-                "description": "Number of results to return (default: 5, max: 10)",
-            },
-            "search_type": {
-                "type": "string",
-                "enum": ["general", "code", "docs", "news", "images"],
-                "description": "Type of search: 'general' for broad searches, 'code' for code examples/GitHub/Stack Overflow, 'docs' for documentation/tutorials, 'news' for recent news, 'images' for image search",
-            },
-        },
-        "required": ["query"],
-    },
-}
-
 # Spawn process tool
 SPAWN_PROCESS_SPEC: dict[str, Any] = {
     "name": "spawn_process",

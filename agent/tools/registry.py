@@ -203,9 +203,7 @@ class ToolRegistry:
             elif name == "finish":
                 result = self._execute_finish(arguments)
             elif name == "update_plan":
-                result = self._execute_update_plan(arguments)
-            elif name == "web_search":
-                result = self._execute_web_search(arguments)        
+                result = self._execute_update_plan(arguments) 
             elif name == "spawn_process":
                 result = self._execute_spawn_process(cwd, arguments)
             elif name == "kill_process":
@@ -716,21 +714,6 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
         except Exception as e:
             return ToolResult.fail(f"Transcript failed: {e}")
     
-    def _execute_web_search(self, args: dict[str, Any]) -> ToolResult:
-        """Search the web for information."""
-        query = args.get("query", "")
-        num_results = args.get("num_results", 5)
-        search_type = args.get("search_type", "general")
-        
-        if not query:
-            return ToolResult.invalid(
-                "Missing required parameter 'query'. "
-                "Usage: web_search(query: str, num_results?: int, search_type?: str)"
-            )
-        
-        from agent.tools.web_search import web_search
-        return web_search(query, num_results, search_type)
-
     def _execute_spawn_process(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Start a long-running process in the background."""
         command = args.get("command", "")

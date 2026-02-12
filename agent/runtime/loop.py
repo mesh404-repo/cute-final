@@ -407,10 +407,7 @@ def run_agent_loop(
         
         messages.append(assistant_msg)
 
-        # Execute each tool call and collect results
-        # We must add ALL tool results before any other messages (Anthropic API requirement)
         tool_results = []
-        pending_images = []
         finish_called = False
 
         for call in response.function_calls:
@@ -479,14 +476,7 @@ def run_agent_loop(
                 "content": output,
                 "tool_name": tool_name,
                 "invalid": result.invalid_param,
-            })
-            
-            # Collect image for later (after all tool results)
-            if result.inject_content:
-                pending_images.append({
-                    "tool_name": tool_name,
-                    "content": result.inject_content,
-                })        
+            })               
         
         # Add ALL tool results first (required by Anthropic API)
         for tool_result in tool_results:
@@ -503,30 +493,6 @@ def run_agent_loop(
 
         if total_cost >= cost_limit:
             break
-        # Now add any images as a separate user message (after tool results)
-        # Limit to max 5 images per turn to avoid hitting API limits
-        MAX_IMAGES_PER_TURN = 5
-        if pending_images:
-            images_to_add = pending_images[:MAX_IMAGES_PER_TURN]
-            if len(pending_images) > MAX_IMAGES_PER_TURN:
-                _log(f"Limiting images: {len(pending_images)} requested, adding {MAX_IMAGES_PER_TURN}")
-            
-            image_content = []
-            for img in images_to_add:
-                image_content.append({"type": "text", "text": f"Image from {img['tool_name']}:"})
-                image_content.append(img["content"])
-            
-            messages.append({
-                "role": "user",
-                "content": image_content,
-            })
-            
-            # Immediately prune if we've exceeded image limits
-            from agent.runtime.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
-            total_imgs = count_total_images(messages)
-            if total_imgs > MAX_IMAGES_PER_REQUEST - 10:
-                _log(f"Immediate image prune: {total_imgs} images in context")
-                messages = prune_old_images(messages)
 
         if finish_called:
             # No tool calls - agent thinks it's done

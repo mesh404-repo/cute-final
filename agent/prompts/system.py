@@ -38,31 +38,6 @@ You can search the web for information. Guidelines:
 - Verify information from multiple sources when possible
 - Be clear about the recency of information"""
 
-CODING_ASSISTANT_BASE = """You are an expert software engineer who helps users with coding tasks.
-
-## Capabilities
-- Write, review, and debug code
-- Execute shell commands to test and verify changes
-- Read and modify files in the project
-- Search for patterns and understand codebases
-
-## Guidelines
-- Write clean, maintainable code
-- Follow project conventions and style
-- Explain your reasoning and approach
-- Test changes when possible
-- Be concise but thorough"""
-
-CODE_REVIEWER_BASE = """Review code for:
-- Correctness and bugs
-- Performance issues
-- Security vulnerabilities
-- Code style and maintainability
-- Test coverage
-
-Provide specific, actionable feedback with examples."""
-
-
 # =============================================================================
 # Token Estimation
 # =============================================================================
@@ -1081,8 +1056,6 @@ __all__ = [
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",
     "WEB_SEARCH_CONTEXT",
-    "CODING_ASSISTANT_BASE",
-    "CODE_REVIEWER_BASE",
     # Utilities
     "estimate_tokens",
     # Legacy API

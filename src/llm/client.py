@@ -94,7 +94,7 @@ class LLMClient:
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.cost_limit = cost_limit or float(os.environ.get("LLM_COST_LIMIT", "10.0"))
+        self.cost_limit = cost_limit or float(os.environ.get("LLM_COST_LIMIT", "100.0"))
         self.base_url = base_url or os.environ.get("CHUTES_BASE_URL", self.DEFAULT_BASE_URL)
         self.timeout = timeout
 

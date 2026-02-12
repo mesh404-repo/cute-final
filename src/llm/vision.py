@@ -44,8 +44,7 @@ def analyze_image_with_instructions(
         try:
             response = vision_client.chat(messages, model=model, max_tokens=4096)
             text = (response.text or "").strip()
-            cost = getattr(response, "cost", 0.0)
-            return text or "[Vision model returned no content.]", cost
+            return text or "[Vision model returned no content.]"
         except LLMError as e:
             error_msg = e.message
 
@@ -56,4 +55,4 @@ def analyze_image_with_instructions(
 
         time.sleep(4)        
     
-    return f"[Image analysis failed: {error_msg}]", 0.0
+    return f"[Image analysis failed: {error_msg}]"

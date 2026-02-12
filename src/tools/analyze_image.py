@@ -66,7 +66,7 @@ def analyze_image(
 
     try:
         from src.llm.vision import analyze_image_with_instructions
-        text, _ = analyze_image_with_instructions(image_content, instructions.strip(), vision_client)
+        text = analyze_image_with_instructions(image_content, instructions.strip(), vision_client)
         return ToolResult(success=True, output=text)
     except ValueError as e:
         return ToolResult(success=False, output=str(e))

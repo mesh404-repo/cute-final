@@ -122,40 +122,6 @@ Returns file paths sorted by modification time.""",
     },
 }
 
-# Apply patch tool
-APPLY_PATCH_SPEC: dict[str, Any] = {
-    "name": "apply_patch",
-    "description": """Applies file patches to create, update, or delete files.
-
-Patch format:
-*** Begin Patch
-*** Add File: <path>
-+line to add
-*** Update File: <path>
-@@ context line
--old line
-+new line
-*** Delete File: <path>
-*** End Patch
-
-Rules:
-- Use @@ with context to identify where to make changes
-- Prefix new lines with + (even for new files)
-- Prefix removed lines with -
-- Use 3 lines of context before and after changes
-- File paths must be relative, never absolute""",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "patch": {
-                "type": "string",
-                "description": "The patch content following the format described above",
-            },
-        },
-        "required": ["patch"],
-    },
-}
-
 # Analyze image tool (vision model; use when main model does not support images)
 ANALYZE_IMAGE_SPEC: dict[str, Any] = {
     "name": "analyze_image",

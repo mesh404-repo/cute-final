@@ -130,7 +130,7 @@ def _log(msg: str):
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [superagent] {msg}", file=sys.stderr, flush=True)
 
-def make_client() -> LLMClient:
+def get_llm_client() -> LLMClient:
     """Construct LLM client from configuration."""
     return LLMClient(
         model=CONFIG["model"],
@@ -138,13 +138,12 @@ def make_client() -> LLMClient:
         max_tokens=CONFIG.get("max_tokens", 16384),
     )
 
-def make_vision_client() -> LLMClient:
+def get_vision_client() -> LLMClient:
     """Construct LLM client from configuration."""
     return LLMClient(
         model=CONFIG["vision_model"],
         temperature=0.0,
         max_tokens=4096,
-        cost_limit=float(CONFIG.get("cost_limit", 100.0)),
         timeout=float(CONFIG.get("llm_timeout", 180)),
     )
 
@@ -156,8 +155,8 @@ def main():
     # Initialize components
     start_time = time.time()
 
-    llm = make_client()
-    vision_llm = make_vision_client()
+    llm = get_llm_client()
+    vision_llm = get_vision_client()
 
     tools = ToolRegistry(vision_llm)
     ctx = AgentContext(instruction=args.instruction)

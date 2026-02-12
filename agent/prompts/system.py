@@ -704,7 +704,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 - For servers, VMs, or daemons: prefer spawn_process to start them, then wait_for_port to confirm readiness. Inspect logs via read_file or shell.
 - When a program must run until a specific file or artifact appears (image, log, socket): use run_until_file or wait_for_file instead of sleep loops. Do not throttle output with `| head`/`| tail`; redirect to a log file and use the wait tools.
 - When a task requires exactly one instance of a process: kill all existing instances first (e.g. `pkill -9 process_name || true`, then `sleep 1`), verify with `pgrep -c process_name` (should be 0), then start. After starting, confirm exactly one instance.
-- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x process_name | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
+- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x nginx | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
 - Before marking the task complete: verify expected processes are running, ensure no duplicate/stale processes from failed attempts, and kill any processes you started that aren't needed for verification.
 
 ## Artifacts and long-running programs
@@ -826,6 +826,32 @@ The messages you send before tool calls should describe what is immediately abou
 
 # Tool Guidelines
 
+## Web search
+
+You have access to the `web_search` tool which allows you to search the web for information, documentation, code examples, and solutions. This is a valuable resource for solving tasks effectively.
+
+**When to use web search:**
+- When you encounter unfamiliar technologies, commands, libraries, or APIs
+- When you're stuck on a problem and need to find solutions or examples
+- When you need to research how to accomplish a specific task
+- When you need documentation, tutorials, or code examples
+- When working with open source projects and need to understand patterns or best practices
+
+**How to use web search effectively:**
+- Use specific, targeted queries with relevant keywords (library names, error messages, specific concepts)
+- Use `search_type="code"` when looking for code examples or GitHub repositories
+- Use `search_type="docs"` when looking for official documentation or tutorials
+- Use `search_type="general"` for broad information searches
+- Iterate on queries if initial results aren't helpful - refine with more specific terms
+- Combine multiple searches to break down complex questions
+- Always verify and test solutions in your environment rather than blindly copying code
+
+**Examples of effective searches:**
+- "python subprocess timeout example" (for API usage examples)
+- "bash script error handling best practices" (for best practices)
+
+Remember: Web search is a tool to help you solve problems. Use it proactively when you need information, but always adapt solutions to your specific context and verify they work correctly.
+
 ## Multiple Tool Calling
 
 You can and should make multiple tool calls in a single turn when the tools have no dependencies on each other's outputs. This improves efficiency and reduces latency.
@@ -862,7 +888,11 @@ You can and should make multiple tool calls in a single turn when the tools have
 5. **Information gathering**:
    - `read_file` + `grep_files` (read a file and search for related patterns in codebase)
    - `list_dir` + `grep_files` (explore directory and search for patterns)
-   
+
+6. **Documentation and code**:
+   - `read_file` on README + `read_file` on main code file
+   - `web_search` for documentation + `read_file` on related code
+
 **Best practices:**
 - Group related independent operations together
 - Use multiple calls when you're confident they won't conflict

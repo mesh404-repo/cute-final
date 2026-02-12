@@ -194,8 +194,6 @@ class ToolRegistry:
                 result = self._execute_list_dir(cwd, arguments)
             elif name == "grep_files":
                 result = self._execute_grep(ctx, cwd, arguments)
-            elif name == "apply_patch":
-                result = self._execute_apply_patch(cwd, arguments)
             elif name == "analyze_image":
                 result = self._execute_analyze_image(cwd, arguments)
             elif name == "image_info":
@@ -526,22 +524,7 @@ Partial output before timeout:
         except subprocess.TimeoutExpired:
             return ToolResult.fail("Search timed out")
         except Exception as e:
-            return ToolResult.fail(f"Search failed: {e}")
-    
-    def _execute_apply_patch(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Apply a patch to files."""
-        patch = args.get("patch", "")
-        
-        if not patch:
-            return ToolResult.invalid(
-                "Missing required parameter 'patch'. "
-                "Usage: apply_patch(patch: str) - patch should be in unified diff format"
-            )
-        
-        from src.tools.apply_patch import ApplyPatchTool
-        
-        tool = ApplyPatchTool(cwd)
-        return tool.execute(patch=patch)    
+            return ToolResult.fail(f"Search failed: {e}")    
 
     def _execute_analyze_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Analyze an image with the vision model using the given instructions."""

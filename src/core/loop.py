@@ -296,7 +296,7 @@ def run_agent_loop(
             # ================================================================
             # Call LLM with retry logic
             # ================================================================
-            max_retries = 5
+            max_retries = 8
             response = None
 
             for attempt in range(1, max_retries + 1):
@@ -335,7 +335,6 @@ def run_agent_loop(
                     raise  # Don't retry cost limit errors
 
                 except LLMError as e:
-                    last_error = e
                     error_msg = str(e.message) if hasattr(e, "message") else str(e)
                     _log(f"LLM error (attempt {attempt}/{max_retries}): {e.code} - {error_msg}")
 
@@ -355,7 +354,7 @@ def run_agent_loop(
                         _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 4 * attempt  # 10s, 20s, 30s, 40s
+                        wait_time = 10 * attempt  # 10s, 20s, 30s, 40s
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -368,7 +367,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 4 * attempt
+                        wait_time = 10 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

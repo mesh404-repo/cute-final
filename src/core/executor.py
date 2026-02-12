@@ -298,9 +298,6 @@ class AgentExecutor:
         if tool_name == "write_file":
             return RiskLevel.MEDIUM
 
-        if tool_name == "apply_patch":
-            return RiskLevel.MEDIUM
-
         if tool_name == "update_plan":
             return RiskLevel.SAFE
 

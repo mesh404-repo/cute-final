@@ -162,6 +162,23 @@ Parent directories are created automatically.""",
     },
 }
 
+# Finish tool – explicit task completion with summary
+FINISH_SPEC: dict[str, Any] = {
+    "name": "finish",
+    "description": "Signal that the task is complete. Call this when all work is done and verified. Provide a brief completion summary.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "summary": {
+                "type": "string",
+                "description": "Brief summary of what was done and how it was verified.",
+            },
+        },
+        "required": ["summary"],
+        "additionalProperties": False,
+    },
+}
+
 # Update plan tool
 UPDATE_PLAN_SPEC: dict[str, Any] = {
     "name": "update_plan",
@@ -442,6 +459,7 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "list_dir": LIST_DIR_SPEC,
     "grep_files": GREP_FILES_SPEC,
     "view_image": VIEW_IMAGE_SPEC,
+    "finish": FINISH_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
     "web_search": WEB_SEARCH_SPEC,
     "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,

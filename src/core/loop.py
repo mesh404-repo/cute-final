@@ -47,6 +47,7 @@ from src.prompts.templates import (
     TOOL_FAILURE_GUIDANCE_TEMPLATE,
     TOOL_INVALID_GUIDANCE_TEMPLATE,
 )
+from src.core.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
 from src.utils.truncate import middle_out_truncate
 
 GLM_4_6_TEE = "zai-org/GLM-4.6-TEE"
@@ -56,7 +57,6 @@ DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
 
 REASING_MODELS = [
     KIMI_2_5_TEE,
-    DEEPSEEK_3_2_TEE,
 ]
 
 if TYPE_CHECKING:
@@ -68,21 +68,6 @@ def _log(msg: str) -> None:
     """Log to stderr."""
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
-
-
-def _append_assistant_with_reasoning(
-    messages: List[Dict[str, Any]],
-    response: Any,
-    response_text: str,
-) -> None:
-    """Append assistant message, preserving reasoning_details/reasoning when present."""
-    msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
-    if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
-        msg["reasoning_details"] = response.reasoning_details
-    if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
-        msg["reasoning"] = response.reasoning
-    messages.append(msg)
-
 
 def _add_cache_control_to_message(
     msg: Dict[str, Any],
@@ -390,46 +375,9 @@ def run_agent_loop(
         response_text = response.text or ""
 
         if response_text:
-            last_agent_message = response_text
-
-            # Emit agent message
             item_id = next_item_id()
             emit(ItemCompletedEvent(item=make_agent_message_item(item_id, response_text)))
 
-        # Check for function calls
-        has_function_calls = (
-            response.has_function_calls()
-            if hasattr(response, "has_function_calls")
-            else bool(response.function_calls)
-        )
-
-        if not has_function_calls:
-            # No tool calls - agent thinks it's done
-            _log("No tool calls in response")
-
-            _log(f"response_text: {response_text}")
-
-            if total_cost >= cost_limit:
-                break
-
-            # Verification workflow: first → confirmation → complete
-            if pending_completion:                
-                break
-
-            # No verification yet – request first self-verification
-            pending_completion = True
-            _append_assistant_with_reasoning(messages, response, response_text)
-
-            verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
-                instruction=ctx.instruction
-            )
-            messages.append({
-                "role": "user",
-                "content": verification_prompt,
-            })
-            _log("Requesting self-verification before completion")
-            continue        
-        
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
         
@@ -456,14 +404,14 @@ def run_agent_loop(
         messages.append(assistant_msg)
         _log(f"assistant_msg: {assistant_msg}")
 
-        # Execute each tool call and collect results
-        # We must add ALL tool results before any other messages (Anthropic API requirement)
         tool_results = []
+        finish_called = False
         pending_images = []
-        
-        
+
         for call in response.function_calls:
             tool_name = call.name
+            if tool_name == "finish":
+                finish_called = True
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"tool name: {tool_name}")
@@ -547,12 +495,11 @@ def run_agent_loop(
                 messages.append({
                     "role": "user",
                     "content": f"The tool '{tool_result.get('tool_name', '')}' was called with invalid parameters. Please review the error above and return a corrected tool call with all required parameters properly specified."
-                })        
-        
+                })
+
         if total_cost >= cost_limit:
             break
-        # Now add any images as a separate user message (after tool results)
-        # Limit to max 5 images per turn to avoid hitting API limits
+
         MAX_IMAGES_PER_TURN = 5
         if pending_images:
             images_to_add = pending_images[:MAX_IMAGES_PER_TURN]
@@ -571,11 +518,37 @@ def run_agent_loop(
             
             # Immediately prune if we've exceeded image limits
             # This prevents hitting API limits before next manage_context() call
-            from src.core.compaction import count_total_images, prune_old_images, MAX_IMAGES_PER_REQUEST
+            
             total_imgs = count_total_images(messages)
             if total_imgs > MAX_IMAGES_PER_REQUEST - 10:  # Leave buffer
                 _log(f"Immediate image prune: {total_imgs} images in context")
                 messages = prune_old_images(messages)
+    
+
+        if finish_called:
+            # No tool calls - agent thinks it's done
+            _log("finish tool called")
+
+            _log(f"response_text: {response_text}")
+
+            if total_cost >= cost_limit:
+                break
+
+            if pending_completion:
+                break
+
+            # No verification yet – request first self-verification
+            pending_completion = True
+
+            verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
+                instruction=ctx.instruction
+            )
+            messages.append({
+                "role": "user",
+                "content": verification_prompt,
+            })
+            _log("Requesting self-verification before completion")
+            continue                
     
     # 7. Emit turn.completed
     emit(

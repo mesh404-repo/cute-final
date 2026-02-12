@@ -89,7 +89,7 @@ class LLMClient:
         cost_limit: Optional[float] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        timeout: float = 80.0,
+        timeout: float = 120.0,
     ):
         self.model = model
         self.temperature = temperature

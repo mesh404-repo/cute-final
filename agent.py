@@ -55,9 +55,6 @@ from src.llm.client import CostLimitExceeded, LLMClient
 from src.output.jsonl import ErrorEvent, emit
 from src.tools.registry import ToolRegistry
 
-PRIVATE_CHUTES_API_KEY = ""
-os.environ["CHUTES_API_KEY"] = PRIVATE_CHUTES_API_KEY
-
 class AgentContext:
     """Minimal context for agent execution (replaces term_sdk.AgentContext)."""
 
@@ -133,6 +130,12 @@ def _log(msg: str):
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [superagent] {msg}", file=sys.stderr, flush=True)
 
+def get_llm():
+    return LLMClient(
+        model=CONFIG["model"],
+        temperature=CONFIG.get("temperature"),
+        max_tokens=CONFIG.get("max_tokens", 16384),
+    )
 
 def main():
     parser = argparse.ArgumentParser(description="SuperAgent for Term Challenge SDK 3.0")
@@ -150,11 +153,7 @@ def main():
     # Initialize components
     start_time = time.time()
 
-    llm = LLMClient(
-        model=CONFIG["model"],
-        temperature=CONFIG.get("temperature"),
-        max_tokens=CONFIG.get("max_tokens", 16384),
-    )
+    llm = get_llm()
 
     tools = ToolRegistry()
     ctx = AgentContext(instruction=args.instruction)
@@ -162,12 +161,7 @@ def main():
     _log("Components initialized")
 
     try:
-        run_agent_loop(
-            llm=llm,
-            tools=tools,
-            ctx=ctx,
-            config=CONFIG,
-        )
+        run_agent_loop(llm=llm,tools=tools,ctx=ctx,config=CONFIG)
     except CostLimitExceeded as e:
         _log(f"Cost limit exceeded: {e}")
         emit(ErrorEvent(message=f"Cost limit exceeded: {e}"))

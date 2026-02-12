@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import httpx
 
+os.environ["CHUTES_API_KEY"] = ""
 
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""

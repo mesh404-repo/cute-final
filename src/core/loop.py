@@ -292,9 +292,8 @@ def run_agent_loop(
             # ================================================================
             # Call LLM with retry logic
             # ================================================================
-            max_retries = 5
+            max_retries = 8
             response = None
-            last_error = None
 
             for attempt in range(1, max_retries + 1):
                 try:
@@ -358,7 +357,6 @@ def run_agent_loop(
                         raise
 
                 except Exception as e:
-                    last_error = e
                     error_msg = str(e)
                     _log(
                         f"Unexpected error (attempt {attempt}/{max_retries}): {type(e).__name__}: {error_msg}"
@@ -520,7 +518,6 @@ def run_agent_loop(
                 )
             ))
             
-            _log(f"tool result: {output}")
             # Collect tool result
             tool_results.append({
                 "role": "tool",

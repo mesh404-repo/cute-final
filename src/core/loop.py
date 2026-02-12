@@ -266,7 +266,6 @@ def run_agent_loop(
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        temperature = 0.0
         main_model = DEEPSEEK_3_2_TEE
         
         try:
@@ -299,7 +298,6 @@ def run_agent_loop(
             # ================================================================
             max_retries = 5
             response = None
-            last_error = None
 
             for attempt in range(1, max_retries + 1):
                 try:
@@ -364,7 +362,6 @@ def run_agent_loop(
                         raise
 
                 except Exception as e:
-                    last_error = e
                     error_msg = str(e)
                     _log(
                         f"Unexpected error (attempt {attempt}/{max_retries}): {type(e).__name__}: {error_msg}"
@@ -397,9 +394,6 @@ def run_agent_loop(
         response_text = response.text or ""
 
         if response_text:
-            last_agent_message = response_text
-
-            # Emit agent message
             item_id = next_item_id()
             emit(ItemCompletedEvent(item=make_agent_message_item(item_id, response_text)))
 

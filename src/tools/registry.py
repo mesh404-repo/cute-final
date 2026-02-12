@@ -17,8 +17,7 @@ from src.tools.base import ToolResult
 from src.tools.specs import get_all_tools
 
 if TYPE_CHECKING:
-    pass  # AgentContext is duck-typed (has shell(), cwd, etc.)
-
+    from src.llm.client import LLMClient
 
 @dataclass
 class ExecutorConfig:
@@ -100,6 +99,7 @@ class ToolRegistry:
     
     def __init__(
         self,
+        vision_llm: "LLMClient",
         cwd: Optional[Path] = None,
         config: Optional[ExecutorConfig] = None,
     ):
@@ -115,6 +115,8 @@ class ToolRegistry:
         self._cache: Dict[str, CachedResult] = {}
         self._stats = ExecutorStats()
         self._process_runner: Optional[Any] = None  # ProcessToolRunner, lazy init
+
+        self._vision_llm = vision_llm
 
         self.PLATFORM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -556,7 +558,7 @@ Partial output before timeout:
                 "Usage: analyze_image(path: str, instructions: str)"
             )
         from src.tools.analyze_image import analyze_image as run_analyze_image
-        return run_analyze_image(path, instructions, cwd)
+        return run_analyze_image(path, instructions, cwd, self._vision_llm)
 
 
     def _execute_extract_video_frames(self, cwd: Path, args: dict[str, Any]) -> ToolResult:

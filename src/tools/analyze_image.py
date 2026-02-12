@@ -11,12 +11,17 @@ from pathlib import Path
 
 from src.tools.base import ToolResult
 from src.images.loader import load_image_as_data_uri, make_image_content
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.llm.client import LLMClient
 
 
 def analyze_image(
     file_path: str,
     instructions: str,
     cwd: Path,
+    vision_client: "LLMClient",
 ) -> ToolResult:
     """
     Load a local image, send it to the vision model with the given instructions, return analysis text.
@@ -61,7 +66,7 @@ def analyze_image(
 
     try:
         from src.llm.vision import analyze_image_with_instructions
-        text, _cost = analyze_image_with_instructions(image_content, instructions.strip())
+        text, _ = analyze_image_with_instructions(image_content, instructions.strip(), vision_client)
         return ToolResult(success=True, output=text)
     except ValueError as e:
         return ToolResult(success=False, output=str(e))

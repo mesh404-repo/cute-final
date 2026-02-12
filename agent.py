@@ -138,6 +138,16 @@ def make_client() -> LLMClient:
         max_tokens=CONFIG.get("max_tokens", 16384),
     )
 
+def make_vision_client() -> LLMClient:
+    """Construct LLM client from configuration."""
+    return LLMClient(
+        model=CONFIG["vision_model"],
+        temperature=0.0,
+        max_tokens=4096,
+        cost_limit=float(CONFIG.get("cost_limit", 100.0)),
+        timeout=float(CONFIG.get("llm_timeout", 180)),
+    )
+
 def main():
     parser = argparse.ArgumentParser(description="SuperAgent for Term Challenge SDK 3.0")
     parser.add_argument("--instruction", required=True, help="Task instruction from validator")
@@ -147,8 +157,9 @@ def main():
     start_time = time.time()
 
     llm = make_client()
+    vision_llm = make_vision_client()
 
-    tools = ToolRegistry()
+    tools = ToolRegistry(vision_llm)
     ctx = AgentContext(instruction=args.instruction)
 
     _log("Components initialized")

@@ -57,6 +57,7 @@ DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
 
 REASING_MODELS = [
     KIMI_2_5_TEE,
+    DEEPSEEK_3_2_TEE,
 ]
 
 if TYPE_CHECKING:

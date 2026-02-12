@@ -407,69 +407,6 @@ def run_agent_loop(
             item_id = next_item_id()
             emit(ItemCompletedEvent(item=make_agent_message_item(item_id, response_text)))
 
-        # Check for function calls
-        has_function_calls = (
-            response.has_function_calls()
-            if hasattr(response, "has_function_calls")
-            else bool(response.function_calls)
-        )
-
-        if not has_function_calls:
-            # No tool calls - agent thinks it's done
-            _log("No tool calls in response")
-
-            _log(f"response_text: {response_text}")
-
-            if total_cost >= cost_limit:
-                break
-
-            # Verification workflow: first → confirmation → complete
-            if verification_phase == "confirmation":
-                # LLM confirmed using previous verification (or did missing-only checks)
-                _log("Task completion confirmed after verification confirmation")
-
-                if "task incomplete" in response_text.lower():
-                    verification_phase = None
-                    _append_assistant_with_reasoning(messages, response, response_text)
-                    messages.append({
-                        "role": "user",
-                        "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
-                    })
-                    _log("Task incomplete – requesting completion via tools")
-                    continue
-                break
-
-            if verification_phase == "first":
-                # First verification round just completed – store result, request confirmation
-                verification_result = response_text
-                verification_phase = "confirmation"
-                _append_assistant_with_reasoning(messages, response, response_text)
-
-                confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
-                    instruction=ctx.instruction,
-                    previous_verification_result=verification_result,
-                )
-                messages.append({
-                    "role": "user",
-                    "content": confirmation_prompt,
-                })
-                _log("Requesting confirmation: use previous verification, confirm or fix gaps only")
-                continue
-
-            # No verification yet – request first self-verification
-            verification_phase = "first"
-            _append_assistant_with_reasoning(messages, response, response_text)
-
-            verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
-                instruction=ctx.instruction
-            )
-            messages.append({
-                "role": "user",
-                "content": verification_prompt,
-            })
-            _log("Requesting self-verification before completion")
-            continue        
-        
         # Add assistant message with tool calls
         assistant_msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
         
@@ -501,10 +438,12 @@ def run_agent_loop(
         # We must add ALL tool results before any other messages (Anthropic API requirement)
         tool_results = []
         pending_images = []
-        
-        
+        finish_called = False
+
         for call in response.function_calls:
             tool_name = call.name
+            if tool_name == "finish":
+                finish_called = True
             tool_args = call.arguments if isinstance(call.arguments, dict) else {}
             
             _log(f"tool name: {tool_name}")
@@ -588,8 +527,8 @@ def run_agent_loop(
                 messages.append({
                     "role": "user",
                     "content": f"The tool '{tool_result.get('tool_name', '')}' was called with invalid parameters. Please review the error above and return a corrected tool call with all required parameters properly specified."
-                })        
-        
+                })
+
         if total_cost >= cost_limit:
             break
         # Now add any images as a separate user message (after tool results)
@@ -616,6 +555,59 @@ def run_agent_loop(
             if total_imgs > MAX_IMAGES_PER_REQUEST - 10:
                 _log(f"Immediate image prune: {total_imgs} images in context")
                 messages = prune_old_images(messages)
+
+        if finish_called:
+            # No tool calls - agent thinks it's done
+            _log("finish tool called")
+
+            _log(f"response_text: {response_text}")
+
+            if total_cost >= cost_limit:
+                break
+
+            # Verification workflow: first → confirmation → complete
+            if verification_phase == "confirmation":
+                # LLM confirmed using previous verification (or did missing-only checks)
+                _log("Task completion confirmed after verification confirmation")
+
+                if "task incomplete" in response_text.lower():
+                    verification_phase = None
+                    messages.append({
+                        "role": "user",
+                        "content": "The task is incomplete. Please use the appropriate tools to complete the task. Address any missing verifications, unmet requirements, or unresolved issues you identified, then continue working until the task is done.",
+                    })
+                    _log("Task incomplete – requesting completion via tools")
+                    continue
+                break
+
+            if verification_phase == "first":
+                # First verification round just completed – store result, request confirmation
+                verification_result = response_text
+                verification_phase = "confirmation"
+
+                confirmation_prompt = VERIFICATION_CONFIRMATION_TEMPLATE.format(
+                    instruction=ctx.instruction,
+                    previous_verification_result=verification_result,
+                )
+                messages.append({
+                    "role": "user",
+                    "content": confirmation_prompt,
+                })
+                _log("Requesting confirmation: use previous verification, confirm or fix gaps only")
+                continue
+
+            # No verification yet – request first self-verification
+            verification_phase = "first"
+
+            verification_prompt = VERIFICATION_PROMPT_TEMPLATE.format(
+                instruction=ctx.instruction
+            )
+            messages.append({
+                "role": "user",
+                "content": verification_prompt,
+            })
+            _log("Requesting self-verification before completion")
+            continue                
     
     # 7. Emit turn.completed
     emit(

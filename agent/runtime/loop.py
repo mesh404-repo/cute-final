@@ -44,7 +44,6 @@ from agent.output.jsonl import (
 from agent.prompts.system import get_system_prompt
 from agent.prompts.templates import (
     VERIFICATION_PROMPT_TEMPLATE,
-    VERIFICATION_CONFIRMATION_TEMPLATE,
     TOOL_FAILURE_GUIDANCE_TEMPLATE,
     TOOL_INVALID_GUIDANCE_TEMPLATE,
 )
@@ -267,7 +266,6 @@ def run_agent_loop(
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        temperature = 0.0
         main_model = KIMI_2_5_TEE
         
         try:
@@ -300,7 +298,6 @@ def run_agent_loop(
             # ================================================================
             max_retries = 5
             response = None
-            last_error = None
 
             for attempt in range(1, max_retries + 1):
                 try:
@@ -338,7 +335,6 @@ def run_agent_loop(
                     raise  # Don't retry cost limit errors
 
                 except LLMError as e:
-                    last_error = e
                     error_msg = str(e.message) if hasattr(e, "message") else str(e)
                     _log(f"LLM error (attempt {attempt}/{max_retries}): {e.code} - {error_msg}")
 
@@ -365,7 +361,6 @@ def run_agent_loop(
                         raise
 
                 except Exception as e:
-                    last_error = e
                     error_msg = str(e)
                     _log(
                         f"Unexpected error (attempt {attempt}/{max_retries}): {type(e).__name__}: {error_msg}"
@@ -398,9 +393,6 @@ def run_agent_loop(
         response_text = response.text or ""
 
         if response_text:
-            last_agent_message = response_text
-
-            # Emit agent message
             item_id = next_item_id()
             emit(ItemCompletedEvent(item=make_agent_message_item(item_id, response_text)))
 
@@ -560,9 +552,7 @@ def run_agent_loop(
             if total_cost >= cost_limit:
                 break
 
-
             if pending_completion:
-                # First verification round just completed – store result, request confirmation                
                 break
 
             # No verification yet – request first self-verification

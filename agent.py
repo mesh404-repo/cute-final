@@ -54,9 +54,6 @@ from agent.llm.client import CostLimitExceeded, LLMClient
 from agent.output.jsonl import ErrorEvent, emit
 from agent.tools.registry import ToolRegistry
 
-PRIVATE_CHUTES_API_KEY = ""
-os.environ["CHUTES_API_KEY"] = PRIVATE_CHUTES_API_KEY
-
 class AgentContext:
     """Minimal context for agent execution (replaces term_sdk.AgentContext)."""
 
@@ -132,6 +129,24 @@ def _log(msg: str):
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [superagent] {msg}", file=sys.stderr, flush=True)
 
+def get_client() -> LLMClient:
+    """Construct LLM client from configuration."""
+    return LLMClient(
+        model=CONFIG["model"],
+        temperature=CONFIG.get("temperature"),
+        max_tokens=CONFIG.get("max_tokens", 16384),
+    )
+
+def get_vision_client() -> LLMClient:
+    """Return a lazily-created vision model client (uses config vision_model)."""
+    
+    return LLMClient(
+        model=CONFIG["vision_model"],
+        temperature=0.0,
+        max_tokens=4096,
+        cost_limit=float(CONFIG.get("cost_limit", 100.0)),
+        timeout=float(CONFIG.get("llm_timeout", 180)),
+    )
 
 def main():
     parser = argparse.ArgumentParser(description="SuperAgent for Term Challenge SDK 3.0")
@@ -141,24 +156,16 @@ def main():
     # Initialize components
     start_time = time.time()
 
-    llm = LLMClient(
-        model=CONFIG["model"],
-        temperature=CONFIG.get("temperature"),
-        max_tokens=CONFIG.get("max_tokens", 16384),
-    )
+    llm = get_client()
+    vision_llm = get_vision_client()
 
-    tools = ToolRegistry()
+    tools = ToolRegistry(vision_llm=vision_llm)
     ctx = AgentContext(instruction=args.instruction)
 
     _log("Components initialized")
 
     try:
-        run_agent_loop(
-            llm=llm,
-            tools=tools,
-            ctx=ctx,
-            config=CONFIG,
-        )
+        run_agent_loop(llm=llm, tools=tools, ctx=ctx, config=CONFIG)
     except CostLimitExceeded as e:
         _log(f"Cost limit exceeded: {e}")
         emit(ErrorEvent(message=f"Cost limit exceeded: {e}"))

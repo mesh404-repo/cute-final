@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+PRIVATE_CHUTES_API_KEY = ""
+os.environ["CHUTES_API_KEY"] = PRIVATE_CHUTES_API_KEY
 
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""

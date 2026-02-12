@@ -602,6 +602,17 @@ ls -lh /app/*.backup  # Verify backups exist
 
 Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
 
+### Interpreting geometric or toolpath data
+
+When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):
+
+- **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use the `analyze_image` tool to interpret the result: call `analyze_image(path=<path>, instructions=<what to read or describe>)`. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
+- If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and analyzing it with `analyze_image` (with clear instructions) rather than iterating on the same approach.
+
+**Image analysis:** Use the `analyze_image` tool for all image analysis. Call `analyze_image(path, instructions)` with the image path and specific instructions (e.g. "Transcribe all text", "Describe the diagram", "What error message is shown?"). The tool returns the analysis as text.
+
+**Transcribing from images:** When writing an exact string read from an image (via `analyze_image` output), watch for visually similar characters (e.g. letter i vs digit 1, O vs 0) and verify the output character-for-character before writing.
+
 ### Best practices
 
 Follow language-specific best practices in your implementations:
@@ -704,7 +715,7 @@ wait $PID 2>/dev/null        # REAP - removes zombie from process table
 - For servers, VMs, or daemons: prefer spawn_process to start them, then wait_for_port to confirm readiness. Inspect logs via read_file or shell.
 - When a program must run until a specific file or artifact appears (image, log, socket): use run_until_file or wait_for_file instead of sleep loops. Do not throttle output with `| head`/`| tail`; redirect to a log file and use the wait tools.
 - When a task requires exactly one instance of a process: kill all existing instances first (e.g. `pkill -9 process_name || true`, then `sleep 1`), verify with `pgrep -c process_name` (should be 0), then start. After starting, confirm exactly one instance.
-- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x process_name | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
+- Safe process killing: broad `pkill -f pattern` can match your own process if the pattern appears in your arguments. Prefer getting specific PIDs first (e.g. `pgrep -x nginx | xargs -r kill -9`) or kill by PID. When using killall, it matches exact process names only (safer).
 - Before marking the task complete: verify expected processes are running, ensure no duplicate/stale processes from failed attempts, and kill any processes you started that aren't needed for verification.
 
 ## Artifacts and long-running programs

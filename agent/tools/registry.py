@@ -16,6 +16,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 from agent.tools.base import ToolResult
 from agent.tools.specs import get_all_tools
 
+from agent.llm.client import LLMClient
+
 if TYPE_CHECKING:
     pass  # AgentContext is duck-typed (has shell(), cwd, etc.)
 
@@ -100,6 +102,7 @@ class ToolRegistry:
     
     def __init__(
         self,
+        vision_llm: "LLMClient",
         cwd: Optional[Path] = None,
         config: Optional[ExecutorConfig] = None,
     ):
@@ -115,6 +118,7 @@ class ToolRegistry:
         self._cache: Dict[str, CachedResult] = {}
         self._stats = ExecutorStats()
         self._process_runner: Optional[Any] = None  # ProcessToolRunner, lazy init
+        self.vision_llm = vision_llm
 
         self.PLATFORM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -193,7 +197,7 @@ class ToolRegistry:
             elif name == "grep_files":
                 result = self._execute_grep(ctx, cwd, arguments)
             elif name == "analyze_image":
-                result = self._execute_analyze_image(cwd, arguments)
+                result = self._execute_analyze_image(cwd, arguments, self.vision_llm)
             elif name == "image_info":
                 result = self._execute_image_info(cwd, arguments)
             elif name == "extract_video_frames":

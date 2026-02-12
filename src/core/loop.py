@@ -304,7 +304,7 @@ def run_agent_loop(
                     if reasoning_effort and reasoning_effort != "none":
                         extra_body["reasoning"] = {"effort": reasoning_effort}
                     
-                    response = llm.chat_stream(
+                    response = llm.chat(
                         cached_messages,
                         tools=tool_specs,
                         max_tokens=config.get("max_tokens", 16384),

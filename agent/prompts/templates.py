@@ -94,6 +94,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
+- If you performed a calibration or axis conversion, did you try BOTH possible calibration directions? Are ALL fitted parameters (not just positions — also amplitudes, widths, baselines/offsets) physically reasonable and mutually consistent? If baseline/offset values seem inverted or swapped between features, your calibration axis direction is likely wrong — redo with the opposite assignment.
 
 ### 6. Final Decision
 After completing the above verification:

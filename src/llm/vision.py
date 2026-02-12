@@ -36,7 +36,7 @@ def get_vision_client() -> LLMClient:
         temperature=0.0,
         max_tokens=4096,
         cost_limit=float(config.get("cost_limit", 100.0)),
-        timeout=float(config.get("llm_timeout", 180)),
+        timeout=300,
     )
     return _vision_client
 

@@ -435,7 +435,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "grep_files": GREP_FILES_SPEC,
     "finish": FINISH_SPEC,
     "update_plan": UPDATE_PLAN_SPEC,
-    "web_search": WEB_SEARCH_SPEC,
     "image_info": IMAGE_INFO_SPEC,
     "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
     "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,

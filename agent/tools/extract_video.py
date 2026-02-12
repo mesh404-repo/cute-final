@@ -341,14 +341,13 @@ def extract_keyframes(
     cmd.append(str(output_pattern))
     
     try:
-        result = subprocess.run(
+        subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             timeout=300,
             cwd=str(cwd),
         )
-        # ffmpeg may return non-zero even on partial success
         
     except subprocess.TimeoutExpired:
         return ToolResult.fail("Keyframe extraction timed out")

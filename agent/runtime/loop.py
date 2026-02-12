@@ -73,21 +73,6 @@ def _log(msg: str) -> None:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
 
-
-def _append_assistant_with_reasoning(
-    messages: List[Dict[str, Any]],
-    response: Any,
-    response_text: str,
-) -> None:
-    """Append assistant message, preserving reasoning_details/reasoning when present."""
-    msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
-    if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
-        msg["reasoning_details"] = response.reasoning_details
-    if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
-        msg["reasoning"] = response.reasoning
-    messages.append(msg)
-
-
 def _add_cache_control_to_message(
     msg: Dict[str, Any],
     cache_control: Dict[str, str],
@@ -267,7 +252,6 @@ def run_agent_loop(
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        temperature = 0.0
         main_model = KIMI_2_5_TEE
         
         try:
@@ -300,7 +284,6 @@ def run_agent_loop(
             # ================================================================
             max_retries = 5
             response = None
-            last_error = None
 
             for attempt in range(1, max_retries + 1):
                 try:
@@ -560,9 +543,7 @@ def run_agent_loop(
             if total_cost >= cost_limit:
                 break
 
-
             if pending_completion:
-                # First verification round just completed – store result, request confirmation                
                 break
 
             # No verification yet – request first self-verification

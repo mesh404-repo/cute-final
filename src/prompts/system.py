@@ -38,21 +38,6 @@ You can search the web for information. Guidelines:
 - Verify information from multiple sources when possible
 - Be clear about the recency of information"""
 
-CODING_ASSISTANT_BASE = """You are an expert software engineer who helps users with coding tasks.
-
-## Capabilities
-- Write, review, and debug code
-- Execute shell commands to test and verify changes
-- Read and modify files in the project
-- Search for patterns and understand codebases
-
-## Guidelines
-- Write clean, maintainable code
-- Follow project conventions and style
-- Explain your reasoning and approach
-- Test changes when possible
-- Be concise but thorough"""
-
 CODE_REVIEWER_BASE = """Review code for:
 - Correctness and bugs
 - Performance issues
@@ -61,7 +46,6 @@ CODE_REVIEWER_BASE = """Review code for:
 - Test coverage
 
 Provide specific, actionable feedback with examples."""
-
 
 # =============================================================================
 # Token Estimation
@@ -333,202 +317,6 @@ class SystemPrompt:
             self._token_count = estimate_tokens(rendered)
         else:
             self._token_count = 0
-
-
-# =============================================================================
-# Builder Pattern
-# =============================================================================
-
-class SystemPromptBuilder:
-    """Builder for system prompts.
-    
-    Provides a fluent interface for constructing SystemPrompt instances.
-    
-    Example:
-        prompt = (SystemPromptBuilder()
-            .persona("You are a helpful assistant.")
-            .base("Help the user with their tasks.")
-            .variable("name", "Alice")
-            .code_execution()
-            .build())
-    """
-    
-    def __init__(self) -> None:
-        """Create a new builder."""
-        self._prompt = SystemPrompt()
-    
-    def base(self, base: str) -> SystemPromptBuilder:
-        """Set base prompt.
-        
-        Args:
-            base: Base prompt text.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.base = base
-        return self
-    
-    def persona(self, persona: str) -> SystemPromptBuilder:
-        """Set persona.
-        
-        Args:
-            persona: Persona/role description.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.persona = persona
-        return self
-    
-    def section(
-        self,
-        name: str,
-        content: str,
-        priority: int = 0,
-        enabled: bool = True
-    ) -> SystemPromptBuilder:
-        """Add a section.
-        
-        Args:
-            name: Section name (used as header).
-            content: Section content.
-            priority: Priority (higher = earlier in prompt).
-            enabled: Whether section is enabled.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.sections.append(
-            PromptSection(
-                name=name,
-                content=content,
-                priority=priority,
-                enabled=enabled
-            )
-        )
-        return self
-    
-    def variable(self, key: str, value: str) -> SystemPromptBuilder:
-        """Add a variable.
-        
-        Args:
-            key: Variable name.
-            value: Variable value.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.variables[key] = value
-        return self
-    
-    def custom_instructions(self, instructions: str) -> SystemPromptBuilder:
-        """Set custom instructions.
-        
-        Args:
-            instructions: Custom instructions text.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.custom_instructions = instructions
-        return self
-    
-    def code_execution(self) -> SystemPromptBuilder:
-        """Enable code execution context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.code_execution = True
-        return self
-    
-    def file_operations(self) -> SystemPromptBuilder:
-        """Enable file operations context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.file_operations = True
-        return self
-    
-    def web_search(self) -> SystemPromptBuilder:
-        """Enable web search context.
-        
-        Returns:
-            Self for method chaining.
-        """
-        self._prompt.web_search = True
-        return self
-    
-    def build(self) -> SystemPrompt:
-        """Build the system prompt.
-        
-        Returns:
-            Configured SystemPrompt instance.
-        """
-        self._prompt._recalculate_tokens()
-        return self._prompt
-
-
-# =============================================================================
-# Presets
-# =============================================================================
-
-class Presets:
-    """Predefined system prompts for common use cases."""
-    
-    @staticmethod
-    def coding_assistant() -> SystemPrompt:
-        """Default coding assistant prompt.
-        
-        Returns:
-            SystemPrompt configured for coding assistance.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are Fabric, an expert AI coding assistant.")
-            .base(CODING_ASSISTANT_BASE)
-            .code_execution()
-            .file_operations()
-            .build())
-    
-    @staticmethod
-    def research_assistant() -> SystemPrompt:
-        """Research assistant prompt.
-        
-        Returns:
-            SystemPrompt configured for research assistance.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are a helpful research assistant with access to web search.")
-            .base("Help the user find and analyze information. Cite sources when possible.")
-            .web_search()
-            .build())
-    
-    @staticmethod
-    def code_reviewer() -> SystemPrompt:
-        """Code review prompt.
-        
-        Returns:
-            SystemPrompt configured for code review.
-        """
-        return (SystemPromptBuilder()
-            .persona("You are an expert code reviewer.")
-            .base(CODE_REVIEWER_BASE)
-            .file_operations()
-            .build())
-    
-    @staticmethod
-    def minimal() -> SystemPrompt:
-        """Minimal assistant prompt.
-        
-        Returns:
-            SystemPrompt with minimal configuration.
-        """
-        return (SystemPromptBuilder()
-            .base("You are a helpful assistant. Be concise.")
-            .build())
-
 
 # =============================================================================
 # Legacy API
@@ -942,13 +730,10 @@ __all__ = [
     # Core classes
     "PromptSection",
     "SystemPrompt",
-    "SystemPromptBuilder",
-    "Presets",
     # Context strings
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",
     "WEB_SEARCH_CONTEXT",
-    "CODING_ASSISTANT_BASE",
     "CODE_REVIEWER_BASE",
     # Utilities
     "estimate_tokens",

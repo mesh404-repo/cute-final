@@ -1,7 +1,6 @@
 """Tools module - registry and tool implementations."""
 
 # Individual tools
-from src.tools.apply_patch import ApplyPatchTool
 from src.tools.base import BaseTool, ToolMetadata, ToolResult
 from src.tools.registry import (
     CachedResult,
@@ -30,7 +29,6 @@ __all__ = [
     "get_tool_spec",
     "TOOL_SPECS",
     # Tools
-    "ApplyPatchTool",
     "view_image",
     "web_search",
 ]

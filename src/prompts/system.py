@@ -334,6 +334,143 @@ class SystemPrompt:
         else:
             self._token_count = 0
 
+
+# =============================================================================
+# Builder Pattern
+# =============================================================================
+
+class SystemPromptBuilder:
+    """Builder for system prompts.
+    
+    Provides a fluent interface for constructing SystemPrompt instances.
+    
+    Example:
+        prompt = (SystemPromptBuilder()
+            .persona("You are a helpful assistant.")
+            .base("Help the user with their tasks.")
+            .variable("name", "Alice")
+            .code_execution()
+            .build())
+    """
+    
+    def __init__(self) -> None:
+        """Create a new builder."""
+        self._prompt = SystemPrompt()
+    
+    def base(self, base: str) -> SystemPromptBuilder:
+        """Set base prompt.
+        
+        Args:
+            base: Base prompt text.
+            
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.base = base
+        return self
+    
+    def persona(self, persona: str) -> SystemPromptBuilder:
+        """Set persona.
+        
+        Args:
+            persona: Persona/role description.
+            
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.persona = persona
+        return self
+    
+    def section(
+        self,
+        name: str,
+        content: str,
+        priority: int = 0,
+        enabled: bool = True
+    ) -> SystemPromptBuilder:
+        """Add a section.
+        
+        Args:
+            name: Section name (used as header).
+            content: Section content.
+            priority: Priority (higher = earlier in prompt).
+            enabled: Whether section is enabled.
+            
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.sections.append(
+            PromptSection(
+                name=name,
+                content=content,
+                priority=priority,
+                enabled=enabled
+            )
+        )
+        return self
+    
+    def variable(self, key: str, value: str) -> SystemPromptBuilder:
+        """Add a variable.
+        
+        Args:
+            key: Variable name.
+            value: Variable value.
+            
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.variables[key] = value
+        return self
+    
+    def custom_instructions(self, instructions: str) -> SystemPromptBuilder:
+        """Set custom instructions.
+        
+        Args:
+            instructions: Custom instructions text.
+            
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.custom_instructions = instructions
+        return self
+    
+    def code_execution(self) -> SystemPromptBuilder:
+        """Enable code execution context.
+        
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.code_execution = True
+        return self
+    
+    def file_operations(self) -> SystemPromptBuilder:
+        """Enable file operations context.
+        
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.file_operations = True
+        return self
+    
+    def web_search(self) -> SystemPromptBuilder:
+        """Enable web search context.
+        
+        Returns:
+            Self for method chaining.
+        """
+        self._prompt.web_search = True
+        return self
+    
+    def build(self) -> SystemPrompt:
+        """Build the system prompt.
+        
+        Returns:
+            Configured SystemPrompt instance.
+        """
+        self._prompt._recalculate_tokens()
+        return self._prompt
+
+
 # =============================================================================
 # Legacy API
 # =============================================================================
@@ -405,15 +542,6 @@ ls -lh /app/*.backup  # Verify backups exist
 ```
 
 Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
-
-### Interpreting geometric or toolpath data
-
-When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):
-
-- **Prefer image-based interpretation.** Render the data to an image (e.g. with Python; PPM can be written with stdlib only, no extra deps) and use `view_image` to interpret the result. Vision is more reliable for reading text and shapes than inferring from ASCII art or numeric summaries.
-- If ASCII or numeric visualization is ambiguous or hard to read, switch to rendering a bitmap and viewing it with `view_image` rather than iterating on the same approach.
-
-**Transcribing from images:** When writing an exact string read from an image, watch for visually similar characters (e.g. letter i vs digit 1, O vs 0) and verify the output character-for-character before writing.
 
 ### Best practices
 
@@ -869,6 +997,7 @@ __all__ = [
     # Core classes
     "PromptSection",
     "SystemPrompt",
+    "SystemPromptBuilder",
     # Context strings
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",

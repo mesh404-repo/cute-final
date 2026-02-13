@@ -96,8 +96,6 @@ class ToolRegistry:
     Includes caching and execution statistics.
     """
 
-    PLATFORM_CACHE_DIR = Path.home() / ".superagent" / "files"
-    
     def __init__(
         self,
         cwd: Optional[Path] = None,
@@ -116,41 +114,12 @@ class ToolRegistry:
         self._stats = ExecutorStats()
         self._process_runner: Optional[Any] = None  # ProcessToolRunner, lazy init
 
-        self.PLATFORM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
     def _get_process_runner(self) -> Any:
         """Lazy init ProcessToolRunner for spawn_process / kill_process."""
         if self._process_runner is None:
             from src.tools.process import ProcessToolRunner
             self._process_runner = ProcessToolRunner()
         return self._process_runner
-
-    def _save_to_platform_cache(self, content: str | bytes, extension: str = "txt", prefix: str = "response") -> Path:
-        """Save content to platform cache and return the file path.
-        
-        Args:
-            content: The content to save (str or bytes)
-            extension: File extension (txt, json, png, md, etc.)
-            prefix: Prefix for the filename
-            
-        Returns:
-            Path to the saved file
-        """
-        import uuid
-        
-        # Generate unique filename
-        unique_id = uuid.uuid4().hex[:12]
-        timestamp = int(time.time())
-        filename = f"{prefix}_{timestamp}_{unique_id}.{extension}"
-        filepath = self.PLATFORM_CACHE_DIR / filename
-        
-        # Write content
-        if isinstance(content, bytes):
-            filepath.write_bytes(content)
-        else:
-            filepath.write_text(content, encoding="utf-8")
-        
-        return filepath    
     
     def execute(
         self,
@@ -183,39 +152,37 @@ class ToolRegistry:
         
         try:
             if name == "shell_command":
-                result = self._execute_shell(ctx, cwd, arguments)
+                result = self._run_shell(cwd, arguments)
             elif name == "read_file":
-                result = self._execute_read_file(cwd, arguments)
+                result = self._run_read_file(cwd, arguments)
             elif name == "write_file":
-                result = self._execute_write_file(cwd, arguments)
+                result = self._run_write_file(cwd, arguments)
             elif name == "list_dir":
-                result = self._execute_list_dir(cwd, arguments)
+                result = self._run_list_dir(cwd, arguments)
             elif name == "grep_files":
-                result = self._execute_grep(ctx, cwd, arguments)
+                result = self._run_grep(ctx, cwd, arguments)
             elif name == "view_image":
-                result = self._execute_view_image(cwd, arguments)
+                result = self._run_view_image(cwd, arguments)
             elif name == "extract_video_frames":
-                result = self._execute_extract_video_frames(cwd, arguments)
+                result = self._run_extract_video_frames(cwd, arguments)
             elif name == "extract_keyframes":
-                result = self._execute_extract_keyframes(cwd, arguments)
+                result = self._run_extract_keyframes(cwd, arguments)
             elif name == "finish":
-                result = self._execute_finish(arguments)
+                result = self._run_finish(arguments)
             elif name == "update_plan":
-                result = self._execute_update_plan(arguments)
+                result = self._run_update_plan(arguments)
             elif name == "web_search":
-                result = self._execute_web_search(arguments)
-            elif name == "transcript":
-                result = self._execute_transcript(arguments)        
+                result = self._run_web_search(arguments)
             elif name == "spawn_process":
-                result = self._execute_spawn_process(cwd, arguments)
+                result = self._run_spawn_process(cwd, arguments)
             elif name == "kill_process":
-                result = self._execute_kill_process(arguments)
+                result = self._run_kill_process(arguments)
             elif name == "wait_for_port":
-                result = self._execute_wait_for_port(arguments)
+                result = self._run_wait_for_port(arguments)
             elif name == "wait_for_file":
-                result = self._execute_wait_for_file(arguments)
+                result = self._run_wait_for_file(arguments)
             elif name == "run_until_file":
-                result = self._execute_run_until_file(cwd, arguments)   
+                result = self._run_run_until_file(cwd, arguments)   
             else:
                 result = ToolResult.fail(f"Unknown tool: {name}")
                 
@@ -233,9 +200,8 @@ class ToolRegistry:
         
         return result
     
-    def _execute_shell(
-        self,
-        ctx: "AgentContext",
+    def _run_shell(
+        self,        
         cwd: Path,
         args: dict[str, Any],
     ) -> ToolResult:
@@ -328,7 +294,7 @@ Partial output before timeout:
         except Exception as e:
             return ToolResult.fail(f"Command failed: {str(e)}")
     
-    def _execute_read_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_read_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Read file contents."""
         file_path = args.get("file_path", "")
         offset = args.get("offset", 1)
@@ -374,7 +340,7 @@ Partial output before timeout:
         except Exception as e:
             return ToolResult.fail(f"Failed to read file: {e}")
     
-    def _execute_write_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_write_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Write content to a file."""
         file_path = args.get("file_path", "")
         content = args.get("content")
@@ -407,7 +373,7 @@ Partial output before timeout:
         except Exception as e:
             return ToolResult.fail(f"Failed to write file: {e}")
     
-    def _execute_list_dir(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_list_dir(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """List directory contents."""
         dir_path = args.get("dir_path", ".")
         depth = args.get("depth", 2)
@@ -472,7 +438,7 @@ Partial output before timeout:
         except PermissionError:
             pass
     
-    def _execute_grep(
+    def _run_grep(
         self,
         ctx: "AgentContext",
         cwd: Path,
@@ -526,7 +492,7 @@ Partial output before timeout:
         except Exception as e:
             return ToolResult.fail(f"Search failed: {e}")
     
-    def _execute_view_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_view_image(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """View an image file."""
         path = args.get("path", "")
         
@@ -539,7 +505,7 @@ Partial output before timeout:
         from src.tools.view_image import view_image
         return view_image(path, cwd)
 
-    def _execute_extract_video_frames(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_extract_video_frames(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Extract frames from a video file."""
         video_path = args.get("video_path", "")
         output_dir = args.get("output_dir", "")
@@ -568,7 +534,7 @@ Partial output before timeout:
             format=args.get("format", "png"),
         )
     
-    def _execute_extract_keyframes(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_extract_keyframes(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Extract keyframes (scene changes) from a video file."""
         video_path = args.get("video_path", "")
         output_dir = args.get("output_dir", "")
@@ -594,13 +560,13 @@ Partial output before timeout:
             format=args.get("format", "png"),
         )
     
-    def _execute_finish(self, args: dict[str, Any]) -> ToolResult:
+    def _run_finish(self, args: dict[str, Any]) -> ToolResult:
         """Signal task completion with a summary."""
         summary = args.get("summary", "")
         from src.tools.finish import execute_finish
         return execute_finish(summary)
 
-    def _execute_update_plan(self, args: dict[str, Any]) -> ToolResult:
+    def _run_update_plan(self, args: dict[str, Any]) -> ToolResult:
         """Update the task plan."""
         steps = args.get("steps")
         explanation = args.get("explanation")
@@ -628,90 +594,7 @@ Partial output before timeout:
         
         return ToolResult.ok("\n".join(lines))    
     
-    def _execute_transcript(self, args: dict[str, Any]) -> ToolResult:
-        """Analyze video using Kimi K2.5 TEE via Chutes (LLMClient)."""
-        from src.llm.client import LLMClient, LLMError
-
-        video_url = args.get("url", "")
-        instruction = args.get("instruction", "")
-
-        if not video_url:
-            return ToolResult.invalid("No URL provided")
-
-        if not instruction:
-            return ToolResult.invalid(
-                "No instruction provided. You must specify what you want to extract from the video."
-            )
-
-        model = "deepseek-ai/DeepSeek-V3.2-TEE"
-        enhanced_prompt = f"""Analyze this video frame-by-frame with extreme precision and follow these instructions:
-
-{instruction}
-
-
-OUTPUT FORMAT:
-- Follow the exact format specified in the instruction
-- One item per line (unless format specifies otherwise)
-- No additional text or explanations unless requested
-- Preserve exact spelling, capitalization, and formatting
-- Maintain the exact order as they appear
-
-Be thorough, complete, and accurate. Missing even one item or getting spelling/formatting wrong will cause failure."""
-
-        messages: List[Dict[str, Any]] = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": enhanced_prompt},
-                    {"type": "video_url", "video_url": {"url": video_url}},
-                ],
-            }
-        ]
-
-        try:
-            client = LLMClient(
-                model=model,
-                max_tokens=32000,
-                timeout=300.0,
-            )
-            try:
-                response = client.chat(messages, max_tokens=32000)
-            finally:
-                client.close()
-
-            transcript_text = (response.text or "").strip()
-            if not transcript_text:
-                return ToolResult.fail("Returned empty response")
-
-            output_parts = [
-                f"## Video Analysis: {video_url}",
-                f"**Instruction:** {instruction[:200]}{'...' if len(instruction) > 200 else ''}",
-                "",
-                "---",
-                "",
-                transcript_text,
-            ]
-
-            cache_path = self._save_to_platform_cache(
-                transcript_text,
-                extension="txt",
-                prefix="transcript",
-            )
-            output_parts.append(f"\n[Full transcript saved to: {cache_path}]")
-            output_parts.append(
-                "\n**NOTE: This analysis is COMPLETE. The full content is available in the saved file above.**"
-            )
-
-            return ToolResult.ok("\n".join(output_parts))
-
-        except LLMError as e:
-            return ToolResult.fail(f"API error: {e.code} - {e.message}")
-        except ValueError as e:
-            return ToolResult.fail(f"Config error: {e}")
-        except Exception as e:
-            return ToolResult.fail(f"Transcript failed: {e}")
-    
-    def _execute_web_search(self, args: dict[str, Any]) -> ToolResult:
+    def _run_web_search(self, args: dict[str, Any]) -> ToolResult:
         """Search the web for information."""
         query = args.get("query", "")
         num_results = args.get("num_results", 5)
@@ -726,7 +609,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
         from src.tools.web_search import web_search
         return web_search(query, num_results, search_type)
 
-    def _execute_spawn_process(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_spawn_process(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Start a long-running process in the background."""
         command = args.get("command", "")
         if not command:
@@ -740,7 +623,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             stderr_path=args.get("stderr_path"),
         )
 
-    def _execute_kill_process(self, args: dict[str, Any]) -> ToolResult:
+    def _run_kill_process(self, args: dict[str, Any]) -> ToolResult:
         """Terminate a process by PID."""
         pid = args.get("pid")
         if pid is None:
@@ -748,7 +631,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
         runner = self._get_process_runner()
         return runner.kill_process(int(pid), sig=args.get("signal", "TERM"))
 
-    def _execute_wait_for_port(self, args: dict[str, Any]) -> ToolResult:
+    def _run_wait_for_port(self, args: dict[str, Any]) -> ToolResult:
         """Wait until TCP host:port is accepting connections."""
         port = args.get("port")
         if port is None:
@@ -761,7 +644,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             poll_interval_sec=float(args.get("poll_interval_sec", 0.2)),
         )
 
-    def _execute_wait_for_file(self, args: dict[str, Any]) -> ToolResult:
+    def _run_wait_for_file(self, args: dict[str, Any]) -> ToolResult:
         """Wait until a filesystem path exists."""
         path = args.get("path", "")
         if not path:
@@ -774,7 +657,7 @@ Be thorough, complete, and accurate. Missing even one item or getting spelling/f
             min_size_bytes=int(args.get("min_size_bytes", 0)),
         )
 
-    def _execute_run_until_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+    def _run_run_until_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Run command until target file exists, then terminate."""
         command = args.get("command", "")
         file_path = args.get("file_path", "")

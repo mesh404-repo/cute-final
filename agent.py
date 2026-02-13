@@ -154,6 +154,7 @@ def main():
         model=CONFIG["model"],
         temperature=CONFIG.get("temperature"),
         max_tokens=CONFIG.get("max_tokens", 16384),
+        cost_limit=CONFIG.get("cost_limit", 100.0),
     )
 
     tools = ToolRegistry()

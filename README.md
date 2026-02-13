@@ -222,7 +222,7 @@ from src.llm.client import LLMClient
 llm = LLMClient(
     model="moonshotai/Kimi-K2.5-TEE",
     temperature=1.0,  # Recommended for thinking mode
-    max_tokens=16384,
+    max_tokens=32768,
 )
 
 response = llm.chat(messages, tools=tool_specs)
@@ -298,7 +298,7 @@ flowchart LR
 CONFIG = {
     "model": "moonshotai/Kimi-K2.5-TEE",
     "provider": "chutes",
-    "max_tokens": 16384,
+    "max_tokens": 32768,
     "temperature": 1.0,
     "max_iterations": 200,
     "auto_compact_threshold": 0.85,

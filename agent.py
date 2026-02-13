@@ -130,11 +130,12 @@ def _log(msg: str):
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [superagent] {msg}", file=sys.stderr, flush=True)
 
-def get_llm():
+def make_llm():
     return LLMClient(
         model=CONFIG["model"],
         temperature=CONFIG.get("temperature"),
-        max_tokens=CONFIG.get("max_tokens", 16384),
+        max_tokens=CONFIG.get("max_tokens", 32768),
+        cost_limit=CONFIG.get("cost_limit", 100.0),
     )
 
 def main():
@@ -153,7 +154,7 @@ def main():
     # Initialize components
     start_time = time.time()
 
-    llm = get_llm()
+    llm = make_llm()
 
     tools = ToolRegistry()
     ctx = AgentContext(instruction=args.instruction)

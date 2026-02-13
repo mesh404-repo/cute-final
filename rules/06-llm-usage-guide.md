@@ -15,7 +15,7 @@ from src.llm.client import LLMClient, LLMError, CostLimitExceeded
 llm = LLMClient(
     model="moonshotai/Kimi-K2.5-TEE",
     temperature=0.0,  # 0 = deterministic
-    max_tokens=16384,
+    max_tokens=32768,
     cost_limit=10.0   # Cost limit in $
 )
 ```

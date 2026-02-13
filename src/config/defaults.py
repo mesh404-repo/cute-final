@@ -29,7 +29,7 @@ CONFIG: Dict[str, Any] = {
     # Reasoning effort for Kimi K2.5-TEE: none, minimal, low, medium, high, xhigh
     "reasoning_effort": "high",
     # Token limits
-    "max_tokens": 16384,
+    "max_tokens": 32768,
     # Temperature (0 = deterministic)
     "temperature": 0.0,
     # ==========================================================================

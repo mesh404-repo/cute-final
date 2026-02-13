@@ -86,7 +86,7 @@ class LLMClient:
         self,
         model: str,
         temperature: Optional[float] = None,
-        max_tokens: int = 16384,
+        max_tokens: int = 32768,
         cost_limit: Optional[float] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,

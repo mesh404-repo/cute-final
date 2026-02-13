@@ -19,7 +19,7 @@ CONFIG = {
     "model": "openrouter/anthropic/claude-sonnet-4-20250514",
     "provider": "openrouter",
     "temperature": 0.0,
-    "max_tokens": 16384,
+    "max_tokens": 32768,
     "reasoning_effort": "none",
     
     # Agent Execution
@@ -105,7 +105,7 @@ graph LR
 | `model` | `str` | `openrouter/anthropic/claude-sonnet-4-20250514` | Full model identifier with provider prefix |
 | `provider` | `str` | `openrouter` | LLM provider name |
 | `temperature` | `float` | `0.0` | Response randomness (0 = deterministic) |
-| `max_tokens` | `int` | `16384` | Maximum tokens in LLM response |
+| `max_tokens` | `int` | `32768` | Maximum tokens in LLM response |
 | `reasoning_effort` | `str` | `none` | Reasoning depth: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` |
 
 ### Agent Execution Settings

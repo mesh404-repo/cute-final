@@ -3,8 +3,6 @@
 # Individual tools
 from src.tools.apply_patch import ApplyPatchTool
 from src.tools.base import BaseTool, ToolMetadata, ToolResult
-from src.tools.list_dir import ListDirTool
-from src.tools.read_file import ReadFileTool
 from src.tools.registry import (
     CachedResult,
     ExecutorConfig,
@@ -12,10 +10,8 @@ from src.tools.registry import (
     ToolRegistry,
     ToolStats,
 )
-from src.tools.search_files import SearchFilesTool
 from src.tools.specs import TOOL_SPECS, get_all_tools, get_tool_spec
 from src.tools.view_image import view_image
-from src.tools.write_file import WriteFileTool
 from src.tools.web_search import web_search
 
 __all__ = [
@@ -35,10 +31,6 @@ __all__ = [
     "TOOL_SPECS",
     # Tools
     "ApplyPatchTool",
-    "ReadFileTool",
-    "WriteFileTool",
-    "ListDirTool",
-    "SearchFilesTool",
     "view_image",
     "web_search",
 ]

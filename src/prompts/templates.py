@@ -53,15 +53,6 @@ Before anything else, extract ALL critical constraints from the task that are ea
 **Step E: List your extracted constraints:**
 Write out each critical constraint you found, then VERIFY EACH ONE explicitly below.
 
-### 0.5. Example format vs exact output (IMPORTANT)
-- **FUNDAMENTAL PRINCIPLE:** Take the example output as output format only, and never rely on it to solve problems.
-- **CRITICAL: Don't try to derive any insights from the example output. Consider it merely as an output format.**
-- If the task uses **"example output format"**, **"example format"**, **"e.g."**, **"for example"**, or similar when showing sample output: those values are **illustrative only**. They demonstrate structure (e.g. JSON shape, key/value types), not exact data to match. **Never use example values to guide your solution approach.**
-- **CRITICAL - Example addresses/offsets/numeric values:** If an example shows addresses, offsets, or numeric values, **do NOT add base addresses, offsets, or transformations** to match. Use the actual addresses/values from YOUR input data. Example values come from different input—your actual values are correct.
-- **Verification in that case:** Check **format/structure only** (e.g. valid JSON, correct key shape, values are integers not strings, structure matches). Do **NOT** verify that specific keys, addresses, offsets, or values match the example—different data will produce different values, and that is expected.
-- **Exact value checking** applies only when the task explicitly requires matching specific values (e.g. "output must be exactly X"). When in doubt, prefer format checking over exact-value matching for example-style output.
-- **Never infer transformations** from example values—only use transformations EXPLICITLY stated in the task description.
-
 ### 1. Requirements Analysis
 - Re-read the ENTIRE original task above word by word
 - List EVERY requirement, constraint, and expected outcome mentioned
@@ -80,9 +71,6 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
-  - **Running verification scripts:** If the task says "run X to verify", run it in a way that actually executes the checks. Exit code 0 with no output is NOT proof of success—require visible pass output or run the test so it reports pass/fail explicitly.
-  - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values, addresses, offsets, or numeric values to match the example. Use YOUR actual data values, not example values.
-  - **Target/composed output:** If the task specifies a desired output, target result, or reference (e.g. a sequence, file, or structure your solution must produce or match), run the full pipeline or tests and confirm the **composed result matches the target**. Don't assume correctness from partial or format-only checks—validate end-to-end.
   
 ### 4. Component & Functionality Testing
 1. Identify ALL components, modules, or functions mentioned in the task
@@ -95,7 +83,6 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
 - Are there any edge cases the task mentioned that you haven't handled?
 - Did you follow any specific format/style requirements mentioned?
 - Are there any errors, warnings, or issues in your implementation?
-- If the task requires running async tasks with a concurrency limit and that cleanup (e.g. `finally`) runs on keyboard interrupt: verify that there are **more tasks than concurrent slots**. Run with more tasks than the limit allows running at once, send SIGINT after a short delay (e.g. subprocess that sends SIGINT to the process running your code), and confirm that exactly as many tasks as the limit allows started and exactly that many ran cleanup. Run your solution under a small script that sends SIGINT and inspect stdout/stderr for start and cleanup counts.
 
 ### 6. Final Decision
 After completing the above verification:
@@ -110,7 +97,6 @@ After completing the above verification:
 - If something is ambiguous, make the most reasonable choice and proceed
 - If you find issues during verification, FIX THEM before completing
 - Only complete if you have VERIFIED (not assumed) that everything works
-- If a verification script or test failed with an assertion or semantic message (e.g. "No ... detected", "failed", "X did not ..."), treat that as the solution being wrong—try a different approach or fix the solution; do not assume it was only a path/setup issue unless the error clearly says so.
 
 Proceed with verification now.
 </system-reminder>"""

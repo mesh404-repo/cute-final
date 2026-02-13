@@ -388,6 +388,14 @@ When approaching any task, follow these principles:
 - Explore the codebase to verify assumptions - don't rely on assumptions without verification
 - Remember that solutions are validated by tests that may not be visible to you during development
 
+### Tasks involving transformations or two consumers
+
+When your output is used as input to another step—any script, filter, or tool processes it before success is checked—treat that as a transformation in the pipeline:
+
+- **Observe the transformation result.** Run whatever command or step processes your output on a candidate, then inspect the result. Do not assume what it does—inspect it. Use this to see what is preserved, removed, or altered.
+- **Validate each attempt with the real pipeline.** After producing a candidate, run the transformation and then the verification step. Avoid long runs of similar attempts without checking whether the transformed output still meets the requirement. If many attempts fail the same way, use the transformation output to steer the next idea instead of enumerating more variants blindly.
+- **Consider interpretation gaps.** When the same content is read by two different consumers (the transformer and whatever uses the result), they may interpret it differently. Look for cases where the transformer preserves content that the other consumer interprets in a different way—for example comments, malformed or ambiguous syntax, or parser-specific behavior. Prefer strategies that exploit such gaps over exhaustive enumeration of surface-level variants.
+
 ### Data safety and backups (CRITICAL FIRST STEP)
 
 **MANDATORY**: For tasks involving data files, databases, recovery operations, or any mention of corrupted/encrypted files:

@@ -10,13 +10,7 @@ from src.tools.base import ToolResult
 
 # Firecrawl API key - set your key here or via environment variable
 
-PRIVATE_FIRECRAWL_API_KEY = "fc-bfd2fc13088643e5b8c15b564fa53a6b"
-os.environ["FIRECRAWL_API_KEY"] = PRIVATE_FIRECRAWL_API_KEY
-
-# Serper.dev API key - set your key here or via environment variable
-# Get your API key at https://serper.dev/
-PRIVATE_SERPER_API_KEY = "d9b37e79a6eb968ff0b211dbde39abac78a60009"
-os.environ["SERPER_API_KEY"] = PRIVATE_SERPER_API_KEY
+os.environ["FIRECRAWL_API_KEY"] = "fc-ea4fd645653d48d3854c498d5e8730c0"
 
 # Try to import httpx, fall back to requests
 try:

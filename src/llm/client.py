@@ -79,7 +79,6 @@ class LLMClient:
 
     # Default Chutes API configuration
     DEFAULT_BASE_URL = "https://llm.chutes.ai/v1"
-    DEFAULT_API_KEY_ENV = "CHUTES_API_KEY"
 
     def __init__(
         self,
@@ -99,10 +98,10 @@ class LLMClient:
         self.timeout = timeout
 
         # Get API key
-        self._api_key = api_key or os.environ.get(self.DEFAULT_API_KEY_ENV)
+        self._api_key = api_key or os.environ.get("CHUTES_API_KEY")
         if not self._api_key:
             raise ValueError(
-                f"API key required. Set {self.DEFAULT_API_KEY_ENV} environment variable or pass api_key parameter."
+                f"API key required."
             )
 
         self._total_cost = 0.0

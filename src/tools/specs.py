@@ -23,13 +23,7 @@ Use `rg` (ripgrep) for searching text or files as it's much faster than grep."""
             },
             "timeout_ms": {
                 "type": "number",
-                "description": """The timeout for the command in milliseconds (default: 60000, max: 180000). Timeout guidance:
-* 100ms: Immediate commands (cd, ls, echo, cat, pwd, test, [ -f file ])
-* 1000-5000ms: Quick commands (grep, find, head, tail, wc, sort, uniq, basic file ops)
-* 5000-15000ms: Moderate commands (pip install <small>, npm install <small>, compilation, small scripts)
-* 15000-30000ms: Longer operations (package installs, downloads, medium scripts, docker builds)
-* 30000-180000ms: Long-running operations (training, large downloads, complex builds)
-If an operation requires more than 180000ms, break it down into smaller steps (each command has max timeout of 180000ms)""",
+                "description": "The timeout for the command in milliseconds",
             },
         },
         "required": ["command"],

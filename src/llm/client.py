@@ -150,147 +150,6 @@ class LLMClient:
             )
         return result
 
-    def chat(
-        self,
-        messages: List[Dict[str, Any]],
-        tools: Optional[List[Dict[str, Any]]] = None,
-        max_tokens: Optional[int] = None,
-        extra_body: Optional[Dict[str, Any]] = None,
-        model: Optional[str] = None,
-    ) -> LLMResponse:
-        """Send a chat request to Chutes API."""
-        # Check cost limit
-        if self._total_cost >= self.cost_limit:
-            raise CostLimitExceeded(
-                f"Cost limit exceeded: ${self._total_cost:.4f} >= ${self.cost_limit:.4f}",
-                used=self._total_cost,
-                limit=self.cost_limit,
-            )
-
-        # Build request payload
-        payload: Dict[str, Any] = {
-            "model": model or self.model,
-            "messages": self._prepare_messages(messages),
-            "max_tokens": max_tokens or self.max_tokens,
-        }
-
-        if self._supports_temperature(payload["model"]) and self.temperature is not None:
-            payload["temperature"] = self.temperature
-
-        if tools:
-            payload["tools"] = self._build_tools(tools)
-            payload["tool_choice"] = "auto"
-
-        # Add extra body params (like reasoning effort) - some may be ignored by API
-        if extra_body:
-            payload.update(extra_body)
-
-        try:
-            response = self._client.post("/chat/completions", json=payload)
-            self._request_count += 1
-
-            # Handle HTTP errors
-            if response.status_code != 200:
-                error_body = response.text
-                try:
-                    error_json = response.json()
-                    error_msg = error_json.get("error", {}).get("message", error_body)
-                except (json.JSONDecodeError, KeyError):
-                    error_msg = error_body
-
-                # Map status codes to error codes
-                if response.status_code == 401:
-                    raise LLMError(error_msg, code="authentication_error")
-                elif response.status_code == 429:
-                    raise LLMError(error_msg, code="rate_limit")
-                elif response.status_code >= 500:
-                    raise LLMError(error_msg, code="server_error")
-                else:
-                    raise LLMError(f"HTTP {response.status_code}: {error_msg}", code="api_error")
-
-            data = response.json()
-
-        except httpx.TimeoutException as e:
-            raise LLMError(f"Request timed out: {e}", code="timeout")
-        except httpx.ConnectError as e:
-            raise LLMError(f"Connection error: {e}", code="connection_error")
-        except httpx.HTTPError as e:
-            raise LLMError(f"HTTP error: {e}", code="api_error")
-
-        # Parse response
-        result = LLMResponse(raw=data)
-
-        # Extract usage
-        usage = data.get("usage", {})
-        if usage:
-            input_tokens = usage.get("prompt_tokens", 0) or 0
-            output_tokens = usage.get("completion_tokens", 0) or 0
-            cached_tokens = 0
-
-            # Check for cached tokens (OpenAI format)
-            prompt_details = usage.get("prompt_tokens_details", {})
-            if prompt_details:
-                cached_tokens = prompt_details.get("cached_tokens", 0) or 0
-
-            self._input_tokens += input_tokens
-            self._output_tokens += output_tokens
-            self._cached_tokens += cached_tokens
-            self._total_tokens += input_tokens + output_tokens
-
-            result.tokens = {
-                "input": input_tokens,
-                "output": output_tokens,
-                "cached": cached_tokens,
-            }
-
-            # Estimate cost (generic pricing, adjust per model if needed)
-            # Using conservative estimates: $3/1M input, $15/1M output
-            cost = (input_tokens * 3.0 / 1_000_000) + (output_tokens * 15.0 / 1_000_000)
-            self._total_cost += cost
-            result.cost = cost
-
-        # Extract model
-        result.model = data.get("model", self.model)
-
-        # Extract choices
-        choices = data.get("choices", [])
-        if choices:
-            choice = choices[0]
-            message = choice.get("message", {})
-
-            result.finish_reason = choice.get("finish_reason", "") or ""
-            result.text = message.get("content", "") or ""
-
-            # Reasoning/thinking (Kimi K2.5-TEE, OpenRouter reasoning models)
-            result.reasoning = message.get("reasoning") or message.get("reasoning_content")
-            rd = message.get("reasoning_details")
-            if isinstance(rd, list):
-                result.reasoning_details = rd
-            else:
-                result.reasoning_details = None
-
-            # Extract function calls
-            tool_calls = message.get("tool_calls", [])
-            if tool_calls:
-                for call in tool_calls:
-                    func = call.get("function", {})
-                    args_str = func.get("arguments", "{}")
-
-                    try:
-                        args = json.loads(args_str) if isinstance(args_str, str) else args_str
-                    except json.JSONDecodeError:
-                        args = {"raw": args_str}
-
-                    result.function_calls.append(
-                        FunctionCall(
-                            id=call.get("id", "") or "",
-                            name=func.get("name", "") or "",
-                            arguments=args if isinstance(args, dict) else {},
-                        )
-                    )
-
-        return result
-
     def chat_stream(
         self,
         messages: List[Dict[str, Any]],
@@ -298,6 +157,7 @@ class LLMClient:
         max_tokens: Optional[int] = None,
         extra_body: Optional[Dict[str, Any]] = None,
         model: Optional[str] = None,
+        temperature: float = 0.0,
         *,
         on_text_delta: Optional[Callable[[str], None]] = None,
     ) -> LLMResponse:
@@ -317,8 +177,8 @@ class LLMClient:
             "max_tokens": max_tokens or self.max_tokens,
             "stream": True,
         }
-        if self._supports_temperature(payload["model"]) and self.temperature is not None:
-            payload["temperature"] = self.temperature
+        if self._supports_temperature(payload["model"]):
+            payload["temperature"] = temperature
         if tools:
             payload["tools"] = self._build_tools(tools)
             payload["tool_choice"] = "auto"

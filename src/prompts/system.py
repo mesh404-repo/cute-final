@@ -472,6 +472,65 @@ class SystemPromptBuilder:
 
 
 # =============================================================================
+# Presets
+# =============================================================================
+
+class Presets:
+    """Predefined system prompts for common use cases."""
+    
+    @staticmethod
+    def coding_assistant() -> SystemPrompt:
+        """Default coding assistant prompt.
+        
+        Returns:
+            SystemPrompt configured for coding assistance.
+        """
+        return (SystemPromptBuilder()
+            .persona("You are Fabric, an expert AI coding assistant.")
+            .base(CODING_ASSISTANT_BASE)
+            .code_execution()
+            .file_operations()
+            .build())
+    
+    @staticmethod
+    def research_assistant() -> SystemPrompt:
+        """Research assistant prompt.
+        
+        Returns:
+            SystemPrompt configured for research assistance.
+        """
+        return (SystemPromptBuilder()
+            .persona("You are a helpful research assistant with access to web search.")
+            .base("Help the user find and analyze information. Cite sources when possible.")
+            .web_search()
+            .build())
+    
+    @staticmethod
+    def code_reviewer() -> SystemPrompt:
+        """Code review prompt.
+        
+        Returns:
+            SystemPrompt configured for code review.
+        """
+        return (SystemPromptBuilder()
+            .persona("You are an expert code reviewer.")
+            .base(CODE_REVIEWER_BASE)
+            .file_operations()
+            .build())
+    
+    @staticmethod
+    def minimal() -> SystemPrompt:
+        """Minimal assistant prompt.
+        
+        Returns:
+            SystemPrompt with minimal configuration.
+        """
+        return (SystemPromptBuilder()
+            .base("You are a helpful assistant. Be concise.")
+            .build())
+
+
+# =============================================================================
 # Legacy API
 # =============================================================================
 
@@ -998,6 +1057,7 @@ __all__ = [
     "PromptSection",
     "SystemPrompt",
     "SystemPromptBuilder",
+    "Presets",
     # Context strings
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",

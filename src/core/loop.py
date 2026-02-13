@@ -22,7 +22,7 @@ import json
 import copy
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from src.core.compaction import (
     manage_context,
@@ -68,20 +68,6 @@ def _log(msg: str) -> None:
     """Log to stderr."""
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [loop] {msg}", file=sys.stderr, flush=True)
-
-
-def _append_assistant_with_reasoning(
-    messages: List[Dict[str, Any]],
-    response: Any,
-    response_text: str,
-) -> None:
-    """Append assistant message, preserving reasoning_details/reasoning when present."""
-    msg: Dict[str, Any] = {"role": "assistant", "content": response_text}
-    if getattr(response, "reasoning_details", None) and isinstance(response.reasoning_details, list):
-        msg["reasoning_details"] = response.reasoning_details
-    if getattr(response, "reasoning", None) and isinstance(response.reasoning, str):
-        msg["reasoning"] = response.reasoning
-    messages.append(msg)
 
 def _add_cache_control_to_message(
     msg: Dict[str, Any],
@@ -256,7 +242,9 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    
+    temperature = 0.0
+
+    llm_steps = 0
     while iteration < max_iterations:
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
@@ -308,6 +296,7 @@ def run_agent_loop(
                         max_tokens=config.get("max_tokens", 32768),
                         model=main_model,
                         extra_body=extra_body if extra_body else None,
+                        temperature=temperature,
                     )
                     
                     prev_messages = copy.deepcopy(messages)
@@ -324,6 +313,11 @@ def run_agent_loop(
                             total_output_tokens += tokens.get("output", 0)
                             total_cached_tokens += tokens.get("cached", 0)
 
+                    llm_steps += 1
+
+                    if llm_steps % 10 == 0:
+                        temperature = min(temperature + 0.1, 0.7)
+                        
                     break  # Success, exit retry loop
 
                 except CostLimitExceeded:

@@ -10,13 +10,7 @@ from src.tools.base import ToolResult
 
 # Firecrawl API key - set your key here or via environment variable
 
-PRIVATE_FIRECRAWL_API_KEY = "fc-bfd2fc13088643e5b8c15b564fa53a6b"
-os.environ["FIRECRAWL_API_KEY"] = PRIVATE_FIRECRAWL_API_KEY
-
-# Serper.dev API key - set your key here or via environment variable
-# Get your API key at https://serper.dev/
-PRIVATE_SERPER_API_KEY = "d9b37e79a6eb968ff0b211dbde39abac78a60009"
-os.environ["SERPER_API_KEY"] = PRIVATE_SERPER_API_KEY
+os.environ["SERPER_API_KEY"] = "d9b37e79a6eb968ff0b211dbde39abac78a60009"
 
 # Try to import httpx, fall back to requests
 try:
@@ -35,7 +29,7 @@ def web_search(
     query: str,
     num_results: int = 5,
     search_type: str = "general",
-    provider: str = "firecrawl",
+    provider: str = "serper",
 ) -> ToolResult:
     """Search the web for information using Firecrawl or Serper API.
     

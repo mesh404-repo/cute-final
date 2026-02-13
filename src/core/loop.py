@@ -56,7 +56,7 @@ KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
 DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
 
 REASING_MODELS = [
-    KIMI_2_5_TEE,
+    GLM_4_7_TEE,
     DEEPSEEK_3_2_TEE,
 ]
 
@@ -250,7 +250,7 @@ def run_agent_loop(
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        main_model = KIMI_2_5_TEE
+        main_model = GLM_4_7_TEE
 
         try:
             # ================================================================

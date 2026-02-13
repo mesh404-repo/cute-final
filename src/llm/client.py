@@ -156,6 +156,7 @@ class LLMClient:
         max_tokens: Optional[int] = None,
         extra_body: Optional[Dict[str, Any]] = None,
         model: Optional[str] = None,
+        temperature: float = 0.0,
     ) -> LLMResponse:
         """Send a chat request to Chutes API."""
         # Check cost limit
@@ -173,8 +174,8 @@ class LLMClient:
             "max_tokens": max_tokens or self.max_tokens,
         }
 
-        if self._supports_temperature(payload["model"]) and self.temperature is not None:
-            payload["temperature"] = self.temperature
+        if self._supports_temperature(payload["model"]):
+            payload["temperature"] = temperature
 
         if tools:
             payload["tools"] = self._build_tools(tools)

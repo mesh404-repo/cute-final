@@ -256,7 +256,7 @@ class ToolRegistry:
             wd = Path(workdir)
             effective_cwd = wd if wd.is_absolute() else cwd / wd
                     
-        timeout_sec = min(max(1, timeout_ms // 1000), 180)
+        timeout_sec = max(1, timeout_ms // 1000)
 
         try:
             result = subprocess.run(

@@ -80,6 +80,7 @@ For EACH constraint extracted in Step 0, explicitly verify compliance:
   - Do NOT assume something works - actually verify it
   - If you created code, run it to confirm it works
   - If you modified files, read them back to confirm changes are correct
+  - **Running verification scripts:** If the task says "run X to verify", run it in a way that actually executes the checks. Exit code 0 with no output is NOT proof of success—require visible pass output or run the test so it reports pass/fail explicitly.
   - **Output checks:** If the task gave an "example output format" or similar, verify **format/structure only** (JSON shape, types, etc.)—do NOT require exact values, addresses, offsets, or numeric values to match the example. Use YOUR actual data values, not example values.
   - **Target/composed output:** If the task specifies a desired output, target result, or reference (e.g. a sequence, file, or structure your solution must produce or match), run the full pipeline or tests and confirm the **composed result matches the target**. Don't assume correctness from partial or format-only checks—validate end-to-end.
   
@@ -109,6 +110,7 @@ After completing the above verification:
 - If something is ambiguous, make the most reasonable choice and proceed
 - If you find issues during verification, FIX THEM before completing
 - Only complete if you have VERIFIED (not assumed) that everything works
+- If a verification script or test failed with an assertion or semantic message (e.g. "No ... detected", "failed", "X did not ..."), treat that as the solution being wrong—try a different approach or fix the solution; do not assume it was only a path/setup issue unless the error clearly says so.
 
 Proceed with verification now.
 </system-reminder>"""

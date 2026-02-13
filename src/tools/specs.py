@@ -370,11 +370,11 @@ EXTRACT_VIDEO_FRAMES_SPEC: dict[str, Any] = {
     "name": "extract_video_frames",
     "description": """Extract frames from a video file at regular intervals.
 
-Use this to analyze video content by extracting frames that can then be analyzed with analyze_image.
+Use this to analyze video content by extracting frames that can then be analyzed with view_image.
 Useful for: game footage analysis, tutorial extraction, action detection, etc.
 
 The frames are saved as images in the specified output directory.
-After extraction, use analyze_image on individual frames to analyze them.""",
+After extraction, use view_image on individual frames to analyze them.""",
     "parameters": {
         "type": "object",
         "properties": {
@@ -420,7 +420,7 @@ More efficient than fixed-interval extraction - only extracts frames where
 significant visual changes occur. Good for understanding video structure
 and key moments.
 
-After extraction, use analyze_image on individual keyframes to analyze them.""",
+After extraction, use view_image on individual keyframes to analyze them.""",
     "parameters": {
         "type": "object",
         "properties": {

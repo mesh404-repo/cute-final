@@ -243,6 +243,8 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
+    temperature = 0.0
+    fine_steps = 0
     
     while iteration < max_iterations:
         iteration += 1
@@ -296,6 +298,7 @@ def run_agent_loop(
                         max_tokens=config.get("max_tokens", 16384),
                         model=main_model,
                         extra_body=extra_body if extra_body else None,
+                        temperature=temperature,
                     )
                     
                     prev_messages = copy.deepcopy(messages)
@@ -311,6 +314,10 @@ def run_agent_loop(
                             total_input_tokens += tokens.get("input", 0)
                             total_output_tokens += tokens.get("output", 0)
                             total_cached_tokens += tokens.get("cached", 0)
+
+                    fine_steps += 1
+                    if fine_steps % 10 == 0:
+                        temperature = min(temperature + 0.1, 0.7)
 
                     break  # Success, exit retry loop
 
@@ -336,7 +343,7 @@ def run_agent_loop(
                     _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 10 * attempt  # 10s, 20s, 30s, 40s
+                        wait_time = 4 * attempt  # 10s, 20s, 30s, 40s
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -350,7 +357,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 10 * attempt
+                        wait_time = 4 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

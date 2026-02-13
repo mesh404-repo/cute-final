@@ -22,7 +22,7 @@ import json
 import copy
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from src.core.compaction import (
     manage_context,

@@ -1,7 +1,6 @@
 """Tools module - registry and tool implementations."""
 
 # Individual tools
-from src.tools.apply_patch import ApplyPatchTool
 from src.tools.base import BaseTool, ToolMetadata, ToolResult
 from src.tools.list_dir import ListDirTool
 from src.tools.read_file import ReadFileTool
@@ -34,7 +33,6 @@ __all__ = [
     "get_tool_spec",
     "TOOL_SPECS",
     # Tools
-    "ApplyPatchTool",
     "ReadFileTool",
     "WriteFileTool",
     "ListDirTool",

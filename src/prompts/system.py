@@ -53,16 +53,6 @@ CODING_ASSISTANT_BASE = """You are an expert software engineer who helps users w
 - Test changes when possible
 - Be concise but thorough"""
 
-CODE_REVIEWER_BASE = """Review code for:
-- Correctness and bugs
-- Performance issues
-- Security vulnerabilities
-- Code style and maintainability
-- Test coverage
-
-Provide specific, actionable feedback with examples."""
-
-
 # =============================================================================
 # Token Estimation
 # =============================================================================
@@ -1012,7 +1002,6 @@ __all__ = [
     "FILE_OPERATIONS_CONTEXT",
     "WEB_SEARCH_CONTEXT",
     "CODING_ASSISTANT_BASE",
-    "CODE_REVIEWER_BASE",
     # Utilities
     "estimate_tokens",
     # Legacy API

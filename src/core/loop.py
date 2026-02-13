@@ -58,8 +58,7 @@ KIMI_K2_THINKING_TEE = "moonshotai/Kimi-K2-Thinking-TEE"
 
 REASING_MODELS = [    
     GLM_4_7_TEE,
-    GLM_4_6_TEE,
-    DEEPSEEK_3_2_TEE,
+    KIMI_2_5_TEE,
 ]
 
 if TYPE_CHECKING:
@@ -260,13 +259,16 @@ def run_agent_loop(
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
 
-    main_model = DEEPSEEK_3_2_TEE
+    main_model = GLM_4_7_TEE
+
+    temperature = 0.0
+    llm_iteration = 0
 
     while iteration < max_iterations:
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        main_model = DEEPSEEK_3_2_TEE
+        main_model = GLM_4_7_TEE
         
         try:
             # ================================================================
@@ -310,9 +312,10 @@ def run_agent_loop(
                     response = llm.chat_stream(
                         cached_messages,
                         tools=tool_specs,
-                        max_tokens=config.get("max_tokens", 16384),
+                        max_tokens=config.get("max_tokens", 32768),
                         model=main_model,
                         extra_body=extra_body if extra_body else None,
+                        temperature=temperature,
                     )
                     
                     prev_messages = copy.deepcopy(messages)
@@ -328,6 +331,11 @@ def run_agent_loop(
                             total_input_tokens += tokens.get("input", 0)
                             total_output_tokens += tokens.get("output", 0)
                             total_cached_tokens += tokens.get("cached", 0)
+
+                    llm_iteration += 1
+                    
+                    if llm_iteration % 10 == 0:
+                        temperature = min(temperature + 0.1, 0.7)
 
                     break  # Success, exit retry loop
 
@@ -354,7 +362,7 @@ def run_agent_loop(
                         _log(f"Switching to model: {main_model}")
 
                     if attempt < max_retries:
-                        wait_time = 10 * attempt  # 10s, 20s, 30s, 40s
+                        wait_time = 4 * attempt  # 10s, 20s, 30s, 40s
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:
@@ -367,7 +375,7 @@ def run_agent_loop(
                     )
 
                     if attempt < max_retries:
-                        wait_time = 10 * attempt
+                        wait_time = 4 * attempt
                         _log(f"Retrying in {wait_time} seconds...")
                         time.sleep(wait_time)
                     else:

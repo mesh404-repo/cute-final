@@ -9,8 +9,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import httpx
 
-os.environ["CHUTES_API_KEY"] = ""
-
 class CostLimitExceeded(Exception):
     """Raised when cost limit is exceeded."""
 
@@ -86,7 +84,7 @@ class LLMClient:
         self,
         model: str,
         temperature: Optional[float] = None,
-        max_tokens: int = 16384,
+        max_tokens: int = 32768,
         cost_limit: Optional[float] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -298,6 +296,7 @@ class LLMClient:
         max_tokens: Optional[int] = None,
         extra_body: Optional[Dict[str, Any]] = None,
         model: Optional[str] = None,
+        temperature: float = 0.0,
         *,
         on_text_delta: Optional[Callable[[str], None]] = None,
     ) -> LLMResponse:
@@ -317,8 +316,8 @@ class LLMClient:
             "max_tokens": max_tokens or self.max_tokens,
             "stream": True,
         }
-        if self._supports_temperature(payload["model"]) and self.temperature is not None:
-            payload["temperature"] = self.temperature
+        if self._supports_temperature(payload["model"]):
+            payload["temperature"] = temperature
         if tools:
             payload["tools"] = self._build_tools(tools)
             payload["tool_choice"] = "auto"

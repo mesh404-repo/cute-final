@@ -38,7 +38,7 @@ def analyze_image_with_instructions(
     messages = [{"role": "user", "content": content}]
 
     retry = 0
-    model = DEEPSEEK_3_2_TEE
+    model = KIMI_2_5_TEE
     error_msg = ""
     while retry < 3:
         try:

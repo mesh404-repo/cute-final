@@ -104,7 +104,7 @@ class AgentConfig(BaseModel):
     max_iterations: int = Field(default=50, description="Maximum iterations")
     timeout: int = Field(default=120, description="Timeout per LLM call in seconds")
     temperature: float = Field(default=0.7, description="Generation temperature")
-    max_tokens: int = Field(default=16384, description="Maximum tokens for response")
+    max_tokens: int = Field(default=32768, description="Maximum tokens for response")
 
     # Sub-configurations
     reasoning: ReasoningConfig = Field(default_factory=ReasoningConfig)

@@ -122,7 +122,7 @@ CONFIG = {
     "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
     "provider": "chutes",
     "temperature": 1.0,  # For thinking mode
-    "max_tokens": 16384,
+    "max_tokens": 32768,
 }
 ```
 

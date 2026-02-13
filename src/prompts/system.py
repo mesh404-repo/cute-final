@@ -68,50 +68,6 @@ def estimate_tokens(text: str) -> int:
     # Simple heuristic: ~4 characters per token + 1
     return (len(text) // 4) + 1
 
-
-# =============================================================================
-# Data Classes
-# =============================================================================
-
-@dataclass
-class PromptSection:
-    """A section of the system prompt.
-    
-    Attributes:
-        name: Section name (used as header).
-        content: Section content.
-        enabled: Whether this section is enabled.
-        priority: Priority (higher = earlier in prompt).
-    """
-    name: str
-    content: str
-    enabled: bool = True
-    priority: int = 0
-    
-    def with_priority(self, priority: int) -> PromptSection:
-        """Set priority and return self for chaining.
-        
-        Args:
-            priority: Priority value (higher = earlier).
-            
-        Returns:
-            Self for method chaining.
-        """
-        self.priority = priority
-        return self
-    
-    def set_enabled(self, enabled: bool) -> PromptSection:
-        """Set enabled state and return self for chaining.
-        
-        Args:
-            enabled: Whether section is enabled.
-            
-        Returns:
-            Self for method chaining.
-        """
-        self.enabled = enabled
-        return self
-
 # =============================================================================
 # Legacy API
 # =============================================================================
@@ -496,33 +452,11 @@ def get_system_prompt(
     
     return f"{SYSTEM_PROMPT}\n\n# Environment\n" + "\n".join(env_lines)
 
-
-
-INITIAL_PROMPT = """## Task Instruction
-
-{instruction}
-
-"""
-
-def get_initial_prompt(instruction: str) -> str:
-    """Get the initial prompt with terminal state.
-    
-    Args:
-        initial_state: Initial terminal state.
-        
-    Returns:
-        Initial prompt string.
-    """
-    return INITIAL_PROMPT.format(instruction=instruction)
-
-
 # =============================================================================
 # Module exports
 # =============================================================================
 
 __all__ = [
-    # Core classes
-    "PromptSection",
     # Context strings
     "CODE_EXECUTION_CONTEXT",
     "FILE_OPERATIONS_CONTEXT",
@@ -532,7 +466,5 @@ __all__ = [
     "estimate_tokens",
     # Legacy API
     "SYSTEM_PROMPT",
-    "INITIAL_PROMPT",
     "get_system_prompt",
-    "get_initial_prompt",
 ]

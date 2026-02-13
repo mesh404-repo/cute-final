@@ -25,6 +25,7 @@ from pathlib import Path
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+os.environ["CHUTES_API_KEY"] = ""
 
 # Auto-install dependencies if missing
 def ensure_dependencies():
@@ -130,21 +131,23 @@ def _log(msg: str):
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] [superagent] {msg}", file=sys.stderr, flush=True)
 
-def get_llm_client() -> LLMClient:
+def make_llm_client() -> LLMClient:
     """Construct LLM client from configuration."""
     return LLMClient(
         model=CONFIG["model"],
         temperature=CONFIG.get("temperature"),
-        max_tokens=CONFIG.get("max_tokens", 16384),
+        max_tokens=CONFIG.get("max_tokens", 32768),
+        cost_limit=CONFIG.get("cost_limit", 100.0),
     )
 
-def get_vision_client() -> LLMClient:
+def make_vision_client() -> LLMClient:
     """Construct LLM client from configuration."""
     return LLMClient(
         model=CONFIG["vision_model"],
         temperature=0.0,
         max_tokens=4096,
         timeout=float(CONFIG.get("llm_timeout", 180)),
+        cost_limit=CONFIG.get("cost_limit", 100),
     )
 
 def main():
@@ -155,8 +158,8 @@ def main():
     # Initialize components
     start_time = time.time()
 
-    llm = get_llm_client()
-    vision_llm = get_vision_client()
+    llm = make_llm_client()
+    vision_llm = make_vision_client()
 
     tools = ToolRegistry(vision_llm)
     ctx = AgentContext(instruction=args.instruction)

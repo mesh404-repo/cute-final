@@ -37,7 +37,7 @@ PRUNE_MINIMUM = 20_000  # Only prune if we can recover at least this many tokens
 PRUNE_MARKER = "[Old tool result content cleared]"
 
 # Image limits (Anthropic max: 100, but we keep fewer for efficiency)
-MAX_IMAGES_PER_REQUEST = 100
+MAX_IMAGES_PER_REQUEST = 500
 IMAGE_PRUNE_TARGET = 10  # Keep only last N images (LLM has already seen older ones)
 IMAGE_PRUNE_MARKER = "[Old image content cleared]"
 

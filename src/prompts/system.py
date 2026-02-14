@@ -523,24 +523,6 @@ When your output is used as input to another step—any script, filter, or tool 
 - **Validate each attempt with the real pipeline.** After producing a candidate, run the transformation and then the verification step. Avoid long runs of similar attempts without checking whether the transformed output still meets the requirement. If many attempts fail the same way, use the transformation output to steer the next idea instead of enumerating more variants blindly.
 - **Consider interpretation gaps.** When the same content is read by two different consumers (the transformer and whatever uses the result), they may interpret it differently. Look for cases where the transformer preserves content that the other consumer interprets in a different way—for example comments, malformed or ambiguous syntax, or parser-specific behavior. Prefer strategies that exploit such gaps over exhaustive enumeration of surface-level variants.
 
-### Data safety and backups (CRITICAL FIRST STEP)
-
-**MANDATORY**: For tasks involving data files, databases, recovery operations, or any mention of corrupted/encrypted files:
-
-- **Backup FIRST, before ANY other operations**: This is your FIRST action, before reading, exploring, querying, or modifying files. Do not run any commands on data files until backups are created.
-- **Identify all related files**: For database tasks, identify and backup the main database file AND all related files (e.g., for SQLite: `.db`, `.db-wal`, `.db-shm` files). For other data formats, identify all components.
-- **Backup pattern**: Use commands like `cp /path/to/file /path/to/file.backup && cp /path/to/related-file /path/to/related-file.backup && echo "Backups created"` to create backups and verify success.
-- **Verify backups**: After creating backups, verify they exist and have non-zero size before proceeding with any other operations.
-- **Generalized rule**: If a task mentions data recovery, database operations, corrupted files, encrypted files, or data extraction - backup ALL related files as your very first step, before any exploration or investigation.
-
-**Example**: For a SQLite database task, your first commands should be:
-```
-cp /app/file.db /app/file.backup && echo "Backups created"
-ls -lh /app/*.backup  # Verify backups exist
-```
-
-Only after backups are confirmed should you proceed with investigation, queries, or recovery operations.
-
 ### Interpreting geometric or toolpath data
 
 When the task involves extracting text or shapes from structured geometric data (e.g. coordinate lists, toolpaths, or similar formats):

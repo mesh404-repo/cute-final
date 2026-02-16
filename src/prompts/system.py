@@ -613,6 +613,27 @@ You are encouraged to make multiple tool calls in a single response when it make
 
 Tools execute sequentially in the order you provide them. Plan your tool calls to maximize parallel work and minimize unnecessary round trips.
 
+## str_replace Tool - For Exact Find-and-Replace (PREFERRED for known strings)
+Use str_replace when you already know the exact text to find and replace. This is the FASTEST edit tool because it does NOT require reading the file first.
+- Perfect for: applying refactor plans, fixing known patterns, replacing specific strings
+- Skips the read-file step entirely — saves a tool call and an LLM round-trip
+- Use `replace_all=true` to replace all occurrences at once
+
+## hashline_edit Tool - For Precise File Editing (use after read_file)
+Use hashline_edit for surgical file modifications when you've already read the file. Each line has a hash like `1:a3|content`.
+- Reference lines by hash (2-3 chars) instead of reproducing content
+- If file changes since reading, edit is rejected (prevents corruption)
+- read_file already returns hashline format (`{n}:{hash}|content`) — use those hashes directly with hashline_edit, no need to call hashline_edit(read) separately
+- **WARNING**: hashline_edit batch mode with 3+ edits can corrupt files. Prefer write_file for multi-edit scenarios.
+
+## Edit Strategy Selection (CRITICAL for multi-edit tasks)
+Choose your edit approach based on the NUMBER of changes needed:
+- **1-2 edits**: Use `str_replace` (fastest, no read needed)
+- **3+ edits in a small file (< 150 lines)**: Use `write_file` to rewrite the ENTIRE file in ONE call. This is faster (1 tool call vs N) and eliminates corruption risk from batch edits.
+- **3+ edits in a large file (150+ lines)**: Use multiple `str_replace` calls
+
+When fixing multiple bugs: read the file once, identify ALL bugs, then rewrite the whole file with write_file. Do NOT use hashline_edit batch mode for 3+ simultaneous edits.
+
 ## Shell commands
 
 When using the shell, you must adhere to the following guidelines:

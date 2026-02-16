@@ -33,8 +33,9 @@ Use `rg` (ripgrep) for searching text or files as it's much faster than grep."""
 # Read file tool
 READ_FILE_SPEC: dict[str, Any] = {
     "name": "read_file",
-    "description": """Reads a local file with 1-indexed line numbers.
-Returns file content with line numbers in format 'L{number}: {content}'.
+    "description": """Reads a local file with hashline format for direct editing compatibility.
+Returns file content in format '{line_number}:{hash}|{content}' (e.g. '12:a3|def hello():').
+The hash can be used directly as target_hash in hashline_edit — no separate hashline_edit(read) needed.
 Supports reading specific ranges with offset and limit parameters.""",
     "parameters": {
         "type": "object",
@@ -401,6 +402,133 @@ After extraction, use view_image on individual keyframes to analyze them.""",
     },
 }
 
+
+# Hashline edit tool - content-addressable line editing
+HASHLINE_EDIT_SPEC: dict[str, Any] = {
+    "name": "hashline_edit",
+    "description": """Edit files using content-addressable line hashes for stable, verifiable modifications.
+
+Each line is tagged with a short hash (2-3 chars) like "1:a3|function hello() {".
+This provides stable identifiers - reference lines by hash, not content or line numbers.
+
+If the file changes since reading, the hash won't match and the edit is rejected.
+This prevents corruption from concurrent modifications or stale context.
+
+Operations:
+- read: Read file with hashline format (e.g., "1:a3|content")
+- replace: Replace line by hash ("replace line 2:f1 with 'new content'")
+- insert_after: Insert after line with given hash
+- insert_before: Insert before line with given hash
+- delete: Delete line by hash
+- replace_range: Replace lines from target_hash to end_hash
+- batch: Apply multiple edits atomically (all succeed or none)
+
+Example:
+  Original: "1:a3|def hello():\n2:f1|  return 'world'\n3:0e|"
+  Edit: replace line "2:f1" with "  return 'universe'"
+  Result: "1:a3|def hello():\n2:b2|  return 'universe'\n3:0e|"
+
+Benefits:
+- No need to reproduce content as "anchor" - just use the hash
+- Detects file changes automatically (hash mismatch)
+- More reliable than line numbers (which shift)
+- More precise than fuzzy matching""",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "operation": {
+                "type": "string",
+                "enum": ["read", "replace", "insert_after", "insert_before", "delete", "replace_range", "batch"],
+                "description": "The edit operation to perform",
+            },
+            "file_path": {
+                "type": "string",
+                "description": "Path to the file to edit",
+            },
+            "target_hash": {
+                "type": "string",
+                "description": "Hash of the target line (2-3 chars from hashline format)",
+            },
+            "target_line": {
+                "type": "number",
+                "description": "Optional line number hint for disambiguation when multiple lines have same hash",
+            },
+            "end_hash": {
+                "type": "string",
+                "description": "For replace_range: hash of the end line",
+            },
+            "end_line": {
+                "type": "number",
+                "description": "For replace_range: end line number hint",
+            },
+            "content": {
+                "type": "string",
+                "description": "New content for replace/insert operations",
+            },
+            "offset": {
+                "type": "number",
+                "description": "For read: starting line number (1-indexed, default: 1)",
+            },
+            "limit": {
+                "type": "number",
+                "description": "For read: maximum lines to return (default: 2000)",
+            },
+            "edits": {
+                "type": "array",
+                "description": "For batch: list of edit operations to apply atomically",
+                "items": {"type": "object"},
+            },
+        },
+        "required": ["operation", "file_path"],
+    },
+}
+
+
+# String replace tool - find and replace exact strings in files (no prior read needed)
+STR_REPLACE_SPEC: dict[str, Any] = {
+    "name": "str_replace",
+    "description": """Find and replace an exact string in a file. No need to read the file first.
+
+Use this when you know the exact text to find and replace — e.g., from a refactor plan,
+error message, or known pattern. This is faster than hashline_edit because it does NOT
+require reading the file first to get line hashes.
+
+The old_str must match EXACTLY (including whitespace and indentation).
+If old_str appears multiple times, only the FIRST occurrence is replaced (unless replace_all=true).
+If old_str is not found, the tool returns an error.
+
+Prefer this tool over hashline_edit when:
+- You already know the exact string to find (from a plan, error, or task description)
+- You want to skip the read-file step
+- You're doing simple find-and-replace operations
+
+Use hashline_edit instead when:
+- You need to edit by line number/hash after reading
+- You need insert_before/insert_after/delete operations""",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "file_path": {
+                "type": "string",
+                "description": "Path to the file to edit",
+            },
+            "old_str": {
+                "type": "string",
+                "description": "Exact string to find in the file",
+            },
+            "new_str": {
+                "type": "string",
+                "description": "String to replace it with",
+            },
+            "replace_all": {
+                "type": "boolean",
+                "description": "If true, replace ALL occurrences (default: false, replaces first only)",
+            },
+        },
+        "required": ["file_path", "old_str", "new_str"],
+    },
+}
+
 # All tool specs
 TOOL_SPECS: dict[str, dict[str, Any]] = {
     "shell_command": SHELL_COMMAND_SPEC,
@@ -419,6 +547,8 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "wait_for_port": WAIT_FOR_PORT_SPEC,
     "wait_for_file": WAIT_FOR_FILE_SPEC,
     "run_until_file": RUN_UNTIL_FILE_SPEC,
+    "hashline_edit": HASHLINE_EDIT_SPEC,
+    "str_replace": STR_REPLACE_SPEC,
  }
 
 

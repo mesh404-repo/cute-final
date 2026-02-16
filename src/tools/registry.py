@@ -157,6 +157,10 @@ class ToolRegistry:
                 result = self._run_read_file(cwd, arguments)
             elif name == "write_file":
                 result = self._run_write_file(cwd, arguments)
+            elif name == "str_replace":
+                result = self._run_str_replace(cwd, arguments)
+            elif name == "hashline_edit":
+                result = self._run_hashline_edit(cwd, arguments)
             elif name == "list_dir":
                 result = self._run_list_dir(cwd, arguments)
             elif name == "grep_files":
@@ -199,6 +203,14 @@ class ToolRegistry:
             self._cache_result(cache_key, result)
         
         return result
+    
+
+    def _run_hashline_edit(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Execute hashline edit operation."""
+        from src.tools.hashline.tool import HashlineEditTool
+
+        tool = HashlineEditTool(cwd)
+        return tool.execute(**args)
     
     def _run_shell(
         self,        
@@ -295,7 +307,7 @@ Partial output before timeout:
             return ToolResult.fail(f"Command failed: {str(e)}")
     
     def _run_read_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Read file contents."""
+        """Read file contents with hashline format for direct editing compatibility."""
         file_path = args.get("file_path", "")
         offset = args.get("offset", 1)
         limit = args.get("limit", 2000)
@@ -317,6 +329,8 @@ Partial output before timeout:
             return ToolResult.fail(f"Not a file: {path}")
         
         try:
+            from src.tools.hashline.core import compute_line_hash
+            
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 lines = f.readlines()
             
@@ -325,10 +339,13 @@ Partial output before timeout:
             end = start + limit
             selected = lines[start:end]
             
-            # Format with line numbers
+            # Format with hashline format: {line_number}:{hash}|{content}
+            # Hashes can be used directly with hashline_edit for editing
             output_lines = []
             for i, line in enumerate(selected, start=start + 1):
-                output_lines.append(f"L{i}: {line.rstrip()}")
+                content = line.rstrip()
+                h = compute_line_hash(content, 2)
+                output_lines.append(f"{i}:{h}|{content}")
             
             output = "\n".join(output_lines)
             
@@ -338,8 +355,69 @@ Partial output before timeout:
             return ToolResult.ok(output)
             
         except Exception as e:
-            return ToolResult.fail(f"Failed to read file: {e}")
-    
+            return ToolResult.fail(f"Failed to read file: {e}")    
+
+    def _run_str_replace(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
+        """Execute exact string find-and-replace in a file (no prior read needed)."""
+        file_path = args.get("file_path", "")
+        old_str = args.get("old_str")
+        new_str = args.get("new_str")
+        replace_all = args.get("replace_all", False)
+
+        missing = []
+        if not file_path:
+            missing.append("file_path")
+        if old_str is None:
+            missing.append("old_str")
+        if new_str is None:
+            missing.append("new_str")
+        if missing:
+            return ToolResult.invalid(
+                f"Missing required parameter(s): {', '.join(missing)}. "
+                "Usage: str_replace(file_path: str, old_str: str, new_str: str, replace_all?: bool)"
+            )
+
+        path = Path(file_path)
+        if not path.is_absolute():
+            path = cwd / path
+
+        if not path.exists():
+            return ToolResult.fail(f"File not found: {path}")
+        if not path.is_file():
+            return ToolResult.fail(f"Not a file: {path}")
+
+        try:
+            content = path.read_text(encoding="utf-8")
+
+            if old_str not in content:
+                # Provide helpful context: show first 200 chars of file
+                preview = content[:200].replace("\n", "\\n")
+                return ToolResult.fail(
+                    f"String not found in {path}. "
+                    f"File starts with: {preview}..."
+                )
+
+            if replace_all:
+                count = content.count(old_str)
+                new_content = content.replace(old_str, new_str)
+                path.write_text(new_content, encoding="utf-8")
+                context_preview = self._str_replace_context(new_content, new_str)
+                return ToolResult.ok(
+                    f"Replaced {count} occurrence(s) in {path}\n{context_preview}"
+                )
+            else:
+                count = content.count(old_str)
+                new_content = content.replace(old_str, new_str, 1)
+                path.write_text(new_content, encoding="utf-8")
+                suffix = f" ({count} total occurrences, replaced first only)" if count > 1 else ""
+                context_preview = self._str_replace_context(new_content, new_str)
+                return ToolResult.ok(
+                    f"Replaced 1 occurrence in {path}{suffix}\n{context_preview}"
+                )
+
+        except Exception as e:
+            return ToolResult.fail(f"Failed to edit file: {e}")
+        
     def _run_write_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
         """Write content to a file."""
         file_path = args.get("file_path", "")

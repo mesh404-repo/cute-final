@@ -250,7 +250,7 @@ def run_agent_loop(
         iteration += 1
         _log(f"Iteration {iteration}/{max_iterations}")
         
-        main_model = KIMI_2_5_TEE
+        main_model = REASING_MODELS[0]
 
         try:
             # ================================================================

@@ -77,6 +77,13 @@ CONFIG: Dict[str, Any] = {
     # --json (always JSONL output)
     "json_output": True,
     # ==========================================================================
+    # Risk Evaluation (pre-execution)
+    # ==========================================================================
+    # Run risk evaluation before main loop; inject DO NOT / MUST DO into conversation
+    "risk_evaluation_enabled": True,
+    # Write risk report to cwd/risk_evaluation.md for debugging
+    "risk_eval_write_md": False,
+    # ==========================================================================
     # Double Confirmation for Task Completion
     # ==========================================================================
     # Require double confirmation before marking task complete

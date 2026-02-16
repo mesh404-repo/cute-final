@@ -490,6 +490,14 @@ Example plan for a complex task:
 
 You don't need to plan simple tasks - use your judgment on when planning adds value.
 
+# Risk Evaluation (when provided)
+
+When a "[Pre-Execution Risk Evaluation]" block is present in the conversation:
+- Follow the **DO NOT** list strictly; do not perform any listed action.
+- Follow the **MUST DO** list; ensure each item is satisfied.
+- Consider the listed **Risks** when choosing commands and edits (e.g. avoid destructive commands, respect file constraints).
+- Use the **Instruction Summary** to stay aligned with the task.
+
 # Task Understanding
 
 - Read task description completely (may contain embedded requirements, test descriptions, technical context)

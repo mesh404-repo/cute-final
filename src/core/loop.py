@@ -42,6 +42,7 @@ from src.output.jsonl import (
     reset_item_counter,
 )
 from src.prompts.system import get_system_prompt
+from src.risk_eval import evaluate_risk
 from src.prompts.templates import (
     VERIFICATION_PROMPT_TEMPLATE,
     TOOL_FAILURE_GUIDANCE_TEMPLATE,
@@ -222,6 +223,39 @@ def run_agent_loop(
             "content": f"Current directory and files:\n```\n{initial_state}\n```",
         }
     )
+
+    # 4b. Risk evaluation (before main loop)
+    risk_evaluation_enabled = config.get("risk_evaluation_enabled", True)
+    if risk_evaluation_enabled:
+        _log("Running risk evaluation...")
+        risk_start = time.time()
+        try:
+            risk_report = evaluate_risk(
+                llm,
+                ctx.instruction,
+                initial_state,
+                cwd=str(cwd),
+                write_md=config.get("risk_eval_write_md", False),
+            )
+            _log(f"Risk evaluation done in {time.time() - risk_start:.1f}s ({len(risk_report)} chars)")
+            for line in risk_report.split("\n"):
+                line = line.strip()
+                if line.startswith("[high]") or line.startswith("[medium]") or line.startswith("[low]") or line.startswith("- ["):
+                    _log(f"  RISK: {line}")
+                elif line.startswith("##"):
+                    _log(f"  {line}")
+            messages.append({
+                "role": "system",
+                "content": (
+                    "[Pre-Execution Risk Evaluation]\n\n"
+                    "Use the following risk analysis when planning and executing. "
+                    "Respect DO NOT and MUST DO lists.\n\n"
+                    f"{risk_report}"
+                ),
+            })
+            _log("Risk evaluation injected into conversation")
+        except Exception as e:
+            _log(f"Risk evaluation failed (continuing without it): {e}")
 
     # 5. Initialize tracking
     total_input_tokens = 0

@@ -26,7 +26,12 @@ def _log(msg: str) -> None:
 
 
 # Model used for risk evaluation (fast, cheap)
-RISK_EVAL_MODEL = "moonshotai/Kimi-K2.5-TEE"
+GLM_5_TEE = "zai-org/GLM-5-TEE"
+KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
+GLM_4_6_TEE = "zai-org/GLM-4.6-TEE"
+GLM_4_7_TEE = "zai-org/GLM-4.7-TEE"
+
+RISK_EVAL_MODELS = [GLM_5_TEE, KIMI_2_5_TEE, GLM_4_7_TEE, GLM_4_6_TEE]
 
 RISK_EVALUATION_TOOL = {
     "name": "submit_risk_evaluation",
@@ -161,7 +166,7 @@ def evaluate_risk(
         f"## Workspace State\n```\n{workspace_state[:3000]}\n```\n\n"
         f"Call submit_risk_evaluation with your analysis (top 5 risks, do_not_list, must_do_list, overall_level)."
     )
-
+    model = RISK_EVAL_MODELS[0]
     for attempt in range(1, max_retries + 1):
         try:
             _log(f"Risk evaluation attempt {attempt}/{max_retries}...")
@@ -172,7 +177,7 @@ def evaluate_risk(
                 ],
                 tools=[RISK_EVALUATION_TOOL],
                 max_tokens=max_tokens,
-                model=RISK_EVAL_MODEL,
+                model=model,
             )
             if response.function_calls:
                 for fc in response.function_calls:
@@ -195,10 +200,15 @@ def evaluate_risk(
                     out_path.parent.mkdir(parents=True, exist_ok=True)
                     out_path.write_text(text, encoding="utf-8")
                 return text
+            raise ValueError("Empty Content")
         except CostLimitExceeded:
             raise
         except Exception as e:
             _log(f"Risk evaluation attempt {attempt}/{max_retries} failed: {e}")
+
+            model_index = RISK_EVAL_MODELS.index(model) if model in RISK_EVAL_MODELS else -1
+            model = RISK_EVAL_MODELS[(model_index + 1) % len(RISK_EVAL_MODELS)]
+
             if attempt < max_retries:
                 time.sleep(min(4 * attempt, 60))
             else:

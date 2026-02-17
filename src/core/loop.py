@@ -274,6 +274,7 @@ def run_agent_loop(
     cost_limit = config.get("cost_limit", 100.0)
 
     concequtive_failed_attempts = 0
+    successful_shell_calls = 0
 
     # Keep a deep copy of the last known good state
     prev_messages = copy.deepcopy(messages)
@@ -496,6 +497,8 @@ def run_agent_loop(
                 raw_output += TOOL_FAILURE_GUIDANCE_TEMPLATE.format(tool_name=tool_name)
             else:
                 concequtive_failed_attempts = 0
+                if tool_name == "shell_command":
+                    successful_shell_calls += 1
             
             # Truncate output using middle-out (keeps beginning and end)
             output = middle_out_truncate(raw_output or "no output", max_tokens=max_output_tokens)
@@ -578,6 +581,11 @@ def run_agent_loop(
                 break
 
             if pending_completion:
+                break
+
+            # Skip verification if the agent already demonstrated testing
+            if successful_shell_calls >= 2:
+                _log(f"Skipping verification: agent ran {successful_shell_calls} successful shell commands")
                 break
 
             # No verification yet – request first self-verification

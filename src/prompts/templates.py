@@ -21,54 +21,11 @@ Consider:
 
 # Template for self-verification before task completion
 VERIFICATION_PROMPT_TEMPLATE = """<system-reminder>
-# Self-Verification Required - CRITICAL
+Quick verification before completing. Re-read the original task:
 
-You indicated the task might be complete. Before finishing, you MUST perform a thorough self-verification.
-
-## Original Task (re-read carefully):
 {instruction}
 
-## Self-Verification Checklist:
-
-### 1. Requirements Analysis
-- Re-read the ENTIRE original task above word by word
-- List EVERY requirement, constraint, and expected outcome mentioned
-- Check if there are any implicit requirements you might have missed
-
-### 2. Work Verification  
-- For EACH requirement identified, verify it was completed:
-  - Run commands to check file contents, test outputs, or verify state
-  - Do NOT assume something works - actually verify it
-  - If you created code, run it to confirm it works
-  - If you modified files, read them back to confirm changes are correct
-  
-### 3. Component & Functionality Testing
-1. Identify ALL components, modules, or functions mentioned in the task
-2. For EACH component, write and run a test command that actually CALLS/EXERCISES the functionality (not just imports)
-3. Run any custom tests you created to validate edge cases
-4. If ANY test fails, analyze the failure, fix your solution, and re-run the tests
-5. DO NOT give up if tests fail - iterate until all tests pass
-
-### 4. Edge Cases & Quality
-- Are there any edge cases the task mentioned that you haven't handled?
-- Did you follow any specific format/style requirements mentioned?
-- Are there any errors, warnings, or issues in your implementation?
-
-### 5. Final Decision
-After completing the above verification:
-- If EVERYTHING is verified and correct (including ALL critical constraints): Summarize what was done and confirm completion
-- If ANY constraint is violated or ANYTHING is missing or broken: Fix it now using the appropriate tools
-- If files are in wrong location: MOVE them to correct location
-- Remove any temporary or intermediate files created during development that are not explicitly required by the task
-
-## CRITICAL REMINDERS:
-- You are running in HEADLESS mode - DO NOT ask questions to the user
-- DO NOT ask for confirmation or clarification - make reasonable decisions
-- If something is ambiguous, make the most reasonable choice and proceed
-- If you find issues during verification, FIX THEM before completing
-- Only complete if you have VERIFIED (not assumed) that everything works
-
-Proceed with verification now.
+Run 1-2 commands to verify the key outputs exist and are correct. Also clean up: remove any intermediate artifacts you created during testing (compiled binaries, temp files, build outputs, test scripts) from output directories — only the requested deliverables should remain. List the output directory to confirm. If everything checks out, call finish() immediately. If something is wrong, fix it. Do NOT re-do work you already verified. Be concise — this should take ONE turn.
 </system-reminder>"""
 
 # Template for shell command timeout errors

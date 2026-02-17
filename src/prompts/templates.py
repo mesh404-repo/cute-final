@@ -59,7 +59,6 @@ After completing the above verification:
 - If EVERYTHING is verified and correct (including ALL critical constraints): Summarize what was done and confirm completion
 - If ANY constraint is violated or ANYTHING is missing or broken: Fix it now using the appropriate tools
 - If files are in wrong location: MOVE them to correct location
-- Remove any temporary or intermediate files created during development that are not explicitly required by the task
 
 ## CRITICAL REMINDERS:
 - You are running in HEADLESS mode - DO NOT ask questions to the user

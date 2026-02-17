@@ -236,6 +236,17 @@ class ToolRegistry:
                     
         timeout_sec = max(1, timeout_ms // 1000)
 
+        # Build environment with standard system directories guaranteed in PATH.
+        # Container environments often have minimal PATH that excludes /usr/bin,
+        # /usr/sbin etc., causing "command not found" for newly installed packages.
+        shell_env = {**os.environ, "TERM": "dumb"}
+        current_path = shell_env.get("PATH", "")
+        path_parts = current_path.split(":") if current_path else []
+        for d in ("/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"):
+            if d not in path_parts:
+                path_parts.append(d)
+        shell_env["PATH"] = ":".join(path_parts)
+
         try:
             result = subprocess.run(
                 ["sh", "-lc", command],
@@ -243,7 +254,7 @@ class ToolRegistry:
                 capture_output=True,
                 text=True,
                 timeout=timeout_sec,
-                env={**os.environ, "TERM": "dumb"},  # Disable color codes
+                env=shell_env,
             )
             
             output_parts = []

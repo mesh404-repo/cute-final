@@ -58,7 +58,6 @@ KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
 DEEPSEEK_3_2_TEE = "deepseek-ai/DeepSeek-V3.2-TEE"
 
 REASING_MODELS = [
-    GLM_5_TEE,
     KIMI_2_5_TEE,
     DEEPSEEK_3_2_TEE,
 ]

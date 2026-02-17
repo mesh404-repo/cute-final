@@ -31,7 +31,7 @@ KIMI_2_5_TEE = "moonshotai/Kimi-K2.5-TEE"
 GLM_4_6_TEE = "zai-org/GLM-4.6-TEE"
 GLM_4_7_TEE = "zai-org/GLM-4.7-TEE"
 
-RISK_EVAL_MODELS = [GLM_5_TEE, KIMI_2_5_TEE, GLM_4_7_TEE, GLM_4_6_TEE]
+RISK_EVAL_MODELS = [KIMI_2_5_TEE, GLM_4_7_TEE, GLM_4_6_TEE]
 
 RISK_EVALUATION_TOOL = {
     "name": "submit_risk_evaluation",

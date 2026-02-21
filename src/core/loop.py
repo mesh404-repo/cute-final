@@ -226,7 +226,7 @@ def run_agent_loop(
     )
 
     # 4b. Risk evaluation (before main loop)
-    risk_evaluation_enabled = config.get("risk_evaluation_enabled", True)
+    risk_evaluation_enabled = config.get("risk_evaluation_enabled", False)
     if risk_evaluation_enabled:
         _log("Running risk evaluation...")
         risk_start = time.time()

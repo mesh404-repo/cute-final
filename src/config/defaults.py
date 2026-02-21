@@ -80,7 +80,7 @@ CONFIG: Dict[str, Any] = {
     # Risk Evaluation (pre-execution)
     # ==========================================================================
     # Run risk evaluation before main loop; inject DO NOT / MUST DO into conversation
-    "risk_evaluation_enabled": True,
+    "risk_evaluation_enabled": False,
     # Write risk report to cwd/risk_evaluation.md for debugging
     "risk_eval_write_md": False,
     # ==========================================================================

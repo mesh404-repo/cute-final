@@ -546,7 +546,7 @@ Partial output before timeout:
             )
         
         # Build ripgrep command
-        cmd_parts = ["rg", "-l", "--color=never"]
+        cmd_parts = ["rg", "-n", "--color=never"]
         
         if include:
             cmd_parts.extend(["-g", include])

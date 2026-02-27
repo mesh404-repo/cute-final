@@ -112,15 +112,7 @@ class ToolRegistry:
         self._config = config or ExecutorConfig()
         self._cache: Dict[str, CachedResult] = {}
         self._stats = ExecutorStats()
-        self._process_runner: Optional[Any] = None  # ProcessToolRunner, lazy init
 
-    def _get_process_runner(self) -> Any:
-        """Lazy init ProcessToolRunner for spawn_process / kill_process."""
-        if self._process_runner is None:
-            from src.tools.process import ProcessToolRunner
-            self._process_runner = ProcessToolRunner()
-        return self._process_runner
-    
     def execute(
         self,
         ctx: "AgentContext",
@@ -176,17 +168,7 @@ class ToolRegistry:
             elif name == "update_plan":
                 result = self._run_update_plan(arguments)
             elif name == "web_search":
-                result = self._run_web_search(arguments)
-            elif name == "spawn_process":
-                result = self._run_spawn_process(cwd, arguments)
-            elif name == "kill_process":
-                result = self._run_kill_process(arguments)
-            elif name == "wait_for_port":
-                result = self._run_wait_for_port(arguments)
-            elif name == "wait_for_file":
-                result = self._run_wait_for_file(arguments)
-            elif name == "run_until_file":
-                result = self._run_run_until_file(cwd, arguments)   
+                result = self._run_web_search(arguments)            
             else:
                 result = ToolResult.fail(f"Unknown tool: {name}")
                 
@@ -697,73 +679,6 @@ Partial output before timeout:
         
         from src.tools.web_search import web_search
         return web_search(query, num_results, search_type)
-
-    def _run_spawn_process(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Start a long-running process in the background."""
-        command = args.get("command", "")
-        if not command:
-            return ToolResult.invalid("Missing required parameter 'command'. Usage: spawn_process(command: str, ...)")
-        runner = self._get_process_runner()
-        return runner.spawn_process(
-            cwd,
-            command=command,
-            workdir=args.get("cwd"),
-            stdout_path=args.get("stdout_path"),
-            stderr_path=args.get("stderr_path"),
-        )
-
-    def _run_kill_process(self, args: dict[str, Any]) -> ToolResult:
-        """Terminate a process by PID."""
-        pid = args.get("pid")
-        if pid is None:
-            return ToolResult.invalid("Missing required parameter 'pid'. Usage: kill_process(pid: int, ...)")
-        runner = self._get_process_runner()
-        return runner.kill_process(int(pid), sig=args.get("signal", "TERM"))
-
-    def _run_wait_for_port(self, args: dict[str, Any]) -> ToolResult:
-        """Wait until TCP host:port is accepting connections."""
-        port = args.get("port")
-        if port is None:
-            return ToolResult.invalid("Missing required parameter 'port'. Usage: wait_for_port(port: int, ...)")
-        from src.tools.process import run_wait_for_port
-        return run_wait_for_port(
-            host=args.get("host", "127.0.0.1"),
-            port=int(port),
-            timeout_sec=float(args.get("timeout_sec", 15)),
-            poll_interval_sec=float(args.get("poll_interval_sec", 0.2)),
-        )
-
-    def _run_wait_for_file(self, args: dict[str, Any]) -> ToolResult:
-        """Wait until a filesystem path exists."""
-        path = args.get("path", "")
-        if not path:
-            return ToolResult.invalid("Missing required parameter 'path'. Usage: wait_for_file(path: str, ...)")
-        from src.tools.process import run_wait_for_file
-        return run_wait_for_file(
-            path=path,
-            timeout_sec=float(args.get("timeout_sec", 15)),
-            poll_interval_sec=float(args.get("poll_interval_sec", 0.1)),
-            min_size_bytes=int(args.get("min_size_bytes", 0)),
-        )
-
-    def _run_run_until_file(self, cwd: Path, args: dict[str, Any]) -> ToolResult:
-        """Run command until target file exists, then terminate."""
-        command = args.get("command", "")
-        file_path = args.get("file_path", "")
-        if not command or not file_path:
-            return ToolResult.invalid("Missing required parameters 'command' and 'file_path'. Usage: run_until_file(command: str, file_path: str, ...)")
-        from src.tools.process import run_run_until_file
-        return run_run_until_file(
-            cwd,
-            command=command,
-            file_path=file_path,
-            workdir=args.get("cwd"),
-            timeout_sec=float(args.get("timeout_sec", 30)),
-            poll_interval_sec=float(args.get("poll_interval_sec", 0.1)),
-            min_size_bytes=int(args.get("min_size_bytes", 1)),
-            terminate_grace_sec=float(args.get("terminate_grace_sec", 2.0)),
-        )    
-
     # -------------------------------------------------------------------------
     # Caching methods
     # -------------------------------------------------------------------------

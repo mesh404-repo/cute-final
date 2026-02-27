@@ -245,83 +245,6 @@ Be specific in queries: include library names, error messages, specific concepts
     },
 }
 
-# Spawn process tool
-SPAWN_PROCESS_SPEC: dict[str, Any] = {
-    "name": "spawn_process",
-    "description": "Start a long-running process in the background. Returns PID and log paths. Use wait_for_port to confirm the service is up.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "command": {"type": "string", "description": "Command to run (via bash -lc)."},
-            "cwd": {"type": "string", "description": "Working directory (default: workspace)."},
-            "stdout_path": {"type": "string", "description": "File for stdout (default: auto in /tmp)."},
-            "stderr_path": {"type": "string", "description": "File for stderr (default: auto in /tmp)."},
-        },
-        "required": ["command"],
-    },
-}
-
-# Kill process tool
-KILL_PROCESS_SPEC: dict[str, Any] = {
-    "name": "kill_process",
-    "description": "Terminate a process by PID. Use TERM first; use KILL if needed.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "pid": {"type": "integer", "description": "Process ID to terminate."},
-            "signal": {"type": "string", "enum": ["TERM", "KILL"], "description": "Signal (default TERM)."},
-        },
-        "required": ["pid"],
-    },
-}
-
-# Wait for port tool
-WAIT_FOR_PORT_SPEC: dict[str, Any] = {
-    "name": "wait_for_port",
-    "description": "Wait until a TCP host:port is accepting connections (or timeout). Use after spawn_process to ensure server is up.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "host": {"type": "string", "description": "Hostname or IP (default 127.0.0.1)."},
-            "port": {"type": "integer", "description": "TCP port to check."},
-            "timeout_sec": {"type": "number", "description": "Timeout in seconds (default 15)."},
-        },
-        "required": ["port"],
-    },
-}
-
-# Wait for file tool
-WAIT_FOR_FILE_SPEC: dict[str, Any] = {
-    "name": "wait_for_file",
-    "description": "Wait until a filesystem path exists (or timeout). Useful when a program generates an output artifact asynchronously.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {"type": "string", "description": "Path to wait for."},
-            "timeout_sec": {"type": "number", "description": "Timeout seconds (default 15)."},
-            "min_size_bytes": {"type": "integer", "description": "Require size >= this many bytes (default 0)."},
-        },
-        "required": ["path"],
-    },
-}
-
-# Run until file tool
-RUN_UNTIL_FILE_SPEC: dict[str, Any] = {
-    "name": "run_until_file",
-    "description": "Run a command until a target file exists (or timeout), then terminate. Useful for interactive programs that render a frame/file as readiness.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "command": {"type": "string", "description": "Command to run (via bash -lc)."},
-            "file_path": {"type": "string", "description": "File to wait for."},
-            "cwd": {"type": "string", "description": "Working directory (default: workspace)."},
-            "timeout_sec": {"type": "number", "description": "Timeout seconds (default 30)."},
-            "min_size_bytes": {"type": "integer", "description": "Require file size >= this (default 1)."},
-        },
-        "required": ["command", "file_path"],
-    },
-}
-
 # Extract video frames tool
 EXTRACT_VIDEO_FRAMES_SPEC: dict[str, Any] = {
     "name": "extract_video_frames",
@@ -542,11 +465,6 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
     "web_search": WEB_SEARCH_SPEC,
     "extract_video_frames": EXTRACT_VIDEO_FRAMES_SPEC,
     "extract_keyframes": EXTRACT_KEYFRAMES_SPEC,
-    "spawn_process": SPAWN_PROCESS_SPEC,
-    "kill_process": KILL_PROCESS_SPEC,
-    "wait_for_port": WAIT_FOR_PORT_SPEC,
-    "wait_for_file": WAIT_FOR_FILE_SPEC,
-    "run_until_file": RUN_UNTIL_FILE_SPEC,
     "hashline_edit": HASHLINE_EDIT_SPEC,
     "str_replace": STR_REPLACE_SPEC,
  }

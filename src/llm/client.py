@@ -1,4 +1,4 @@
-"""LLM Client using httpx for Chutes API (OpenAI-compatible)."""
+"""LLM Client using httpx for Chutes API."""
 
 from __future__ import annotations
 
@@ -36,24 +36,6 @@ class FunctionCall:
     name: str
     arguments: Dict[str, Any]
 
-    @classmethod
-    def from_openai(cls, call: Dict[str, Any]) -> "FunctionCall":
-        """Parse from OpenAI tool_calls format."""
-        func = call.get("function", {})
-        args_str = func.get("arguments", "{}")
-
-        try:
-            args = json.loads(args_str)
-        except json.JSONDecodeError:
-            args = {"raw": args_str}
-
-        return cls(
-            id=call.get("id", ""),
-            name=func.get("name", ""),
-            arguments=args,
-        )
-
-
 @dataclass
 class LLMResponse:
     """Response from the LLM."""
@@ -65,7 +47,6 @@ class LLMResponse:
     finish_reason: str = ""
     raw: Optional[Dict[str, Any]] = None
     cost: float = 0.0
-    # Reasoning/thinking (Kimi K2.5, OpenRouter reasoning models, etc.)
     reasoning: Optional[str] = None
     reasoning_details: Optional[List[Dict[str, Any]]] = None
 
@@ -75,7 +56,7 @@ class LLMResponse:
 
 
 class LLMClient:
-    """LLM Client using httpx for Chutes API (OpenAI-compatible format)."""
+    """LLM Client using httpx for Chutes API."""
 
     # Default Chutes API configuration
     DEFAULT_BASE_URL = "https://llm.chutes.ai/v1"
@@ -130,7 +111,6 @@ class LLMClient:
         return True
 
     def _build_tools(self, tools: Optional[List[Dict[str, Any]]]) -> Optional[List[Dict[str, Any]]]:
-        """Build tools in OpenAI format."""
         if not tools:
             return None
 
@@ -241,7 +221,6 @@ class LLMClient:
                         if on_text_delta and callable(on_text_delta):
                             on_text_delta(text)
 
-                    # Reasoning/thinking (Kimi K2.5-TEE, OpenRouter, etc.) – streamed like content
                     reasoning_delta = delta.get("reasoning_content") or delta.get("reasoning")
                     if reasoning_delta:
                         reasoning_parts.append(reasoning_delta)
@@ -345,7 +324,6 @@ class LLMClient:
         for msg in messages:
             new_msg = dict(msg)
 
-            # Handle content with cache_control (Anthropic-specific, strip for OpenAI compat)
             content = new_msg.get("content")
             if isinstance(content, list):
                 # Convert multipart format, removing cache_control
@@ -372,7 +350,6 @@ class LLMClient:
         for msg in messages:
             new_msg = dict(msg)
 
-            # Handle content with cache_control (Anthropic-specific, strip for OpenAI compat)
             content = new_msg.get("content")
             if isinstance(content, list):
                 # Convert multipart format, removing cache_control

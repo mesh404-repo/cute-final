@@ -115,18 +115,6 @@ def _apply_caching(
     Apply prompt caching like OpenCode does:
     - Cache first 2 system messages (stable prefix)
     - Cache last 2 non-system messages (extends cache to cover conversation history)
-
-    How Anthropic caching works:
-    - Cache is based on IDENTICAL PREFIX
-    - A cache_control breakpoint tells Anthropic to cache everything BEFORE it
-    - By marking the last messages, we cache the entire conversation history
-    - Each new request only adds new messages after the cached prefix
-
-    Anthropic limits:
-    - Maximum 4 cache_control breakpoints
-    - Minimum tokens per breakpoint: 1024 (Sonnet), 4096 (Opus 4.5 on Bedrock)
-
-    Reference: OpenCode transform.ts applyCaching()
     """
     if not enabled or not messages:
         return messages
@@ -146,7 +134,7 @@ def _apply_caching(
     # Determine which messages to cache:
     # 1. First 2 system messages (stable system prompt)
     # 2. Last 2 non-system messages (extends cache to conversation history)
-    # Total: up to 4 breakpoints (Anthropic limit)
+    # Total: up to 4 breakpoints
     indices_to_cache = set()
 
     # Add first 2 system messages
@@ -527,7 +515,6 @@ def run_agent_loop(
                     "content": result.inject_content,
                 })        
         
-        # Add ALL tool results first (required by Anthropic API)
         for tool_result in tool_results:
             messages.append({
                 "role": tool_result.get("role", "user"),

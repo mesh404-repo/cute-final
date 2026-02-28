@@ -17,7 +17,7 @@ from src.output.processor import OutputProcessor
 
 app = typer.Typer(
     name="superagent",
-    help="Autonomous coding agent inspired by OpenAI Codex CLI",
+    help="Autonomous coding agent",
     add_completion=False,
 )
 

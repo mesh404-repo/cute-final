@@ -8,7 +8,7 @@ license = {text = "MIT"}
 authors = [
     {name = "Platform Network"}
 ]
-keywords = ["agent", "ai", "coding", "llm", "anthropic", "codex", "term-challenge"]
+keywords = ["agent", "ai", "coding", "llm", "codex", "term-challenge"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

@@ -21,8 +21,7 @@ from typing import Any, Dict
 CONFIG: Dict[str, Any] = {
     # ==========================================================================
     # Model Settings (simulates --model gpt-5.2 -c model_reasoning_effort=xhigh)
-    # ==========================================================================
-    # Model to use via Chutes API (OpenAI-compatible)
+    # ==========================================================================    
     "model": os.environ.get("LLM_MODEL", "moonshotai/Kimi-K2.5-TEE"),
     # Provider
     "provider": "chutes",

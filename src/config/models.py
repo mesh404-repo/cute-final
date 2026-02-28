@@ -31,9 +31,6 @@ class Provider(str, Enum):
     """LLM provider."""
 
     CHUTES = "chutes"
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
-
 
 class ReasoningConfig(BaseModel):
     """Configuration for model reasoning."""
@@ -99,7 +96,7 @@ class AgentConfig(BaseModel):
     """Main configuration for the SuperAgent."""
 
     # Model settings
-    model: str = Field(default="anthropic/claude-opus-4-20250514", description="Model to use")
+    model: str = Field(default="moonshotai/Kimi-K2.5-TEE", description="Model to use")
     provider: Provider = Field(default=Provider.CHUTES, description="LLM provider")
     max_iterations: int = Field(default=50, description="Maximum iterations")
     timeout: int = Field(default=120, description="Timeout per LLM call in seconds")
@@ -123,8 +120,6 @@ class AgentConfig(BaseModel):
         """Get the API key for the configured provider."""
         env_vars = {
             Provider.CHUTES: ["CHUTES_API_KEY"],
-            Provider.OPENAI: ["OPENAI_API_KEY"],
-            Provider.ANTHROPIC: ["ANTHROPIC_API_KEY"],
         }
 
         for var in env_vars.get(self.provider, []):
@@ -141,7 +136,5 @@ class AgentConfig(BaseModel):
         """Get the base URL for the configured provider."""
         urls = {
             Provider.CHUTES: "https://api.chutes.ai/v1",
-            Provider.OPENAI: "https://api.openai.com/v1",
-            Provider.ANTHROPIC: "https://api.anthropic.com/v1",
         }
         return urls[self.provider]

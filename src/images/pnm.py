@@ -1,7 +1,6 @@
 """
 Pure-Python PNM (PPM/PGM/PBM) to PNG conversion.
 
-Anthropic vision accepts only image/jpeg, image/png, image/gif, image/webp.
 This module converts PNM files to PNG so they can be sent to the API.
 """
 

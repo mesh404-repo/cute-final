@@ -805,10 +805,7 @@ Partial output before timeout:
         return self._plan.copy()
     
     def get_tools_for_llm(self) -> list:
-        """Get tool specifications formatted for the LLM.
-        
-        Returns tools in OpenAI-compatible format for litellm.
-        """
+        "Get tool specifications formatted for the LLM."
         specs = get_all_tools()
         tools = []
         

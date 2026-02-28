@@ -25,7 +25,6 @@ from src.images.pnm import pnm_to_png_bytes
 MAX_WIDTH = 2048
 MAX_HEIGHT = 768
 
-# PNM extensions: convert to PNG so API receives image/png (Anthropic accepts only png/jpeg/gif/webp)
 _PNM_EXTS = {".ppm", ".pgm", ".pbm", ".pnm"}
 
 # Try to import PIL for image processing
@@ -61,8 +60,7 @@ def load_image_bytes(path: Path) -> Tuple[bytes, str]:
     """
     Load image bytes from disk.
     PNM (PPM/PGM/PBM) files are converted to PNG so the API receives
-    a vision-supported type (image/png); Anthropic accepts only
-    image/jpeg, image/png, image/gif, image/webp.
+    a vision-supported type (image/png); 
     
     Args:
         path: Path to image file

@@ -340,32 +340,6 @@ class LLMClient:
 
         return prepared
 
-
-    def _prepare_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Prepare messages for the API, cleaning up any incompatible fields.
-        Preserves reasoning and reasoning_details on assistant messages for
-        models that support continued reasoning (e.g. Kimi K2.5-TEE).
-        """
-        prepared = []
-        for msg in messages:
-            new_msg = dict(msg)
-
-            content = new_msg.get("content")
-            if isinstance(content, list):
-                # Convert multipart format, removing cache_control
-                cleaned_parts = []
-                for part in content:
-                    if isinstance(part, dict):
-                        cleaned_part = {k: v for k, v in part.items() if k != "cache_control"}
-                        cleaned_parts.append(cleaned_part)
-                    else:
-                        cleaned_parts.append(part)
-                new_msg["content"] = cleaned_parts
-
-            prepared.append(new_msg)
-
-        return prepared
-
     def get_stats(self) -> Dict[str, Any]:
         """Get usage statistics."""
         return {

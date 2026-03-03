@@ -97,7 +97,7 @@ class AgentConfig(BaseModel):
     """Main configuration for the SuperAgent."""
 
     # Model settings
-    model: str = Field(default="anthropic/claude-opus-4-20250514", description="Model to use")
+    model: str = Field(default="moonshotai/Kimi-K2.5-TEE", description="Model to use")
     provider: Provider = Field(default=Provider.CHUTES, description="LLM provider")
     max_iterations: int = Field(default=50, description="Maximum iterations")
     timeout: int = Field(default=120, description="Timeout per LLM call in seconds")

@@ -36,24 +36,6 @@ class FunctionCall:
     name: str
     arguments: Dict[str, Any]
 
-    @classmethod
-    def from_openai(cls, call: Dict[str, Any]) -> "FunctionCall":
-        """Parse from OpenAI tool_calls format."""
-        func = call.get("function", {})
-        args_str = func.get("arguments", "{}")
-
-        try:
-            args = json.loads(args_str)
-        except json.JSONDecodeError:
-            args = {"raw": args_str}
-
-        return cls(
-            id=call.get("id", ""),
-            name=func.get("name", ""),
-            arguments=args,
-        )
-
-
 @dataclass
 class LLMResponse:
     """Response from the LLM."""

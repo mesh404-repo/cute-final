@@ -31,8 +31,6 @@ class Provider(str, Enum):
     """LLM provider."""
 
     CHUTES = "chutes"
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
 
 
 class ReasoningConfig(BaseModel):
@@ -123,8 +121,6 @@ class AgentConfig(BaseModel):
         """Get the API key for the configured provider."""
         env_vars = {
             Provider.CHUTES: ["CHUTES_API_KEY"],
-            Provider.OPENAI: ["OPENAI_API_KEY"],
-            Provider.ANTHROPIC: ["ANTHROPIC_API_KEY"],
         }
 
         for var in env_vars.get(self.provider, []):
@@ -141,7 +137,5 @@ class AgentConfig(BaseModel):
         """Get the base URL for the configured provider."""
         urls = {
             Provider.CHUTES: "https://api.chutes.ai/v1",
-            Provider.OPENAI: "https://api.openai.com/v1",
-            Provider.ANTHROPIC: "https://api.anthropic.com/v1",
         }
         return urls[self.provider]

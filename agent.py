@@ -55,7 +55,7 @@ from src.llm.client import CostLimitExceeded, LLMClient
 from src.output.jsonl import ErrorEvent, emit
 from src.tools.registry import ToolRegistry
 
-os.environ["CHUTES_API_KEY"] = "cpk_92dc9b5b19ed4ac9a630c94ba2a2527c.9bf98a0b9d195e87a175fd73e1fea8b0.N3ozVvCzybn4qa8pgCBpvw8Yfnt90lnN"
+os.environ["CHUTES_API_KEY"] = "cpk_2a542912f8204161a5695e87b8753392.e4a526f69cb65aefbb6fee6eaad60ebd.wR0McS0KNYo2W4RCP5SNOSWhMzgLXyvW"
 
 class AgentContext:
     """Minimal context for agent execution (replaces term_sdk.AgentContext)."""

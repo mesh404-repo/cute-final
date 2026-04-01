@@ -8,6 +8,10 @@ from typing import Optional
 
 from src.tools.base import ToolResult
 
+# Firecrawl API key - set your key here or via environment variable
+
+os.environ["FIRECRAWL_API_KEY"] = "fc-ea4fd645653d48d3854c498d5e8730c0"
+
 # Try to import httpx, fall back to requests
 try:
     import httpx

@@ -247,7 +247,14 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		thinkingLevel = "off";
 	}
 
-	const defaultActiveToolNames: ToolName[] = ["read", "bash", "edit", "write"];
+	// In tau benchmark mode, restrict tools to only read + edit:
+	// - bash: wastes budget on tests, builds, linters, verification commands
+	// - write: overwrites entire files, creating massive diffs that destroy
+	//   positional scoring (every line becomes a deletion + insertion)
+	const isTau = !!(process.env.TAU_AGENT_DIR || process.env.TAU_REPO_DIR || process.env.TAU_PROMPT_FILE);
+	const defaultActiveToolNames: ToolName[] = isTau
+		? ["read", "edit"]
+		: ["read", "bash", "edit", "write"];
 	const initialActiveToolNames: ToolName[] = options.tools
 		? options.tools.map((t) => t.name).filter((n): n is ToolName => n in allTools)
 		: defaultActiveToolNames;

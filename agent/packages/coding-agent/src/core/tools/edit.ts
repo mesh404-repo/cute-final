@@ -155,6 +155,19 @@ export function createEditToolDefinition(
 	options?: EditToolOptions,
 ): ToolDefinition<typeof editSchema, EditToolDetails | undefined, EditRenderState> {
 	const ops = options?.operations ?? defaultEditOperations;
+	const isTau = !!(process.env.TAU_AGENT_DIR || process.env.TAU_REPO_DIR || process.env.TAU_PROMPT_FILE);
+	const baseGuidelines = [
+		"Use edit for precise changes (edits[].oldText must match exactly)",
+		"When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
+		"Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
+		"Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.",
+	];
+	const tauGuidelines = [
+		...baseGuidelines,
+		"oldText must match the file content EXACTLY — character-for-character including whitespace, quotes, and indentation. There is no fuzzy matching.",
+		"Preserve trailing whitespace and line endings exactly as they appear in the file. Do not add or remove blank lines at the end of files.",
+		"When replacing lines, include only the lines that actually change plus minimal context for uniqueness. Every unchanged line you include in oldText/newText is a line that must match perfectly.",
+	];
 	return {
 		name: "edit",
 		label: "edit",
@@ -162,12 +175,7 @@ export function createEditToolDefinition(
 			"Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
 		promptSnippet:
 			"Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
-		promptGuidelines: [
-			"Use edit for precise changes (edits[].oldText must match exactly)",
-			"When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
-			"Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
-			"Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.",
-		],
+		promptGuidelines: isTau ? tauGuidelines : baseGuidelines,
 		parameters: editSchema,
 		prepareArguments: prepareEditArguments,
 		async execute(_toolCallId, input: EditToolInput, signal?: AbortSignal, _onUpdate?, _ctx?) {

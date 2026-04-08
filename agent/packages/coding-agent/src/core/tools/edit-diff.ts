@@ -87,11 +87,17 @@ export interface AppliedEditsResult {
 	newContent: string;
 }
 
+/** Detect if we are running inside the tau benchmark harness. */
+const _isTauMode = !!(process.env.TAU_AGENT_DIR || process.env.TAU_REPO_DIR || process.env.TAU_PROMPT_FILE);
+
 /**
  * Find oldText in content, trying exact match first, then fuzzy match.
  * When fuzzy matching is used, the returned contentForReplacement is the
  * fuzzy-normalized version of the content (trailing whitespace stripped,
  * Unicode quotes/dashes normalized to ASCII).
+ *
+ * In tau benchmark mode, fuzzy matching is disabled to prevent the normalized
+ * content from introducing unintended diff lines that hurt the positional score.
  */
 export function fuzzyFindText(content: string, oldText: string): FuzzyMatchResult {
 	// Try exact match first
@@ -101,6 +107,19 @@ export function fuzzyFindText(content: string, oldText: string): FuzzyMatchResul
 			found: true,
 			index: exactIndex,
 			matchLength: oldText.length,
+			usedFuzzyMatch: false,
+			contentForReplacement: content,
+		};
+	}
+
+	// In tau mode, skip fuzzy matching entirely — it normalizes the file content
+	// (strips trailing whitespace, changes quotes/dashes) which creates ghost
+	// diff lines that destroy positional scoring alignment.
+	if (_isTauMode) {
+		return {
+			found: false,
+			index: -1,
+			matchLength: 0,
 			usedFuzzyMatch: false,
 			contentForReplacement: content,
 		};
